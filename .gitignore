@@ -1,2 +1,6 @@
 *.ini
 .cache/
+venv
+src/publisher/parse/parser.hh
+src/publisher/parse/parser.cc
+src/publisher/parse/location.hh

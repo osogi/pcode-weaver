@@ -6,7 +6,7 @@ RUN set -ex;\
     manylinux-interpreters ensure cp311-cp311;\
     /opt/python/cp311-cp311/bin/python -m venv /venv;\
     . /venv/bin/activate;\
-    pip install "meson>=1.7" "meson-python>=0.17" "ninja>=1.11" "reoxide==${REOXIDE_VERSION}";\
+    pip install "meson>=1.10.1" "meson-python>=0.17" "ninja>=1.11" "reoxide==${REOXIDE_VERSION}";\
     deactivate;\
     mkdir -p /root/.config/reoxide;\
     touch /root/.config/reoxide/reoxide.toml
@@ -16,7 +16,7 @@ COPY . .
 
 RUN set -ex;\
     . /venv/bin/activate;\
-    meson setup build;\
+    meson setup build --buildtype release;\
     meson install -C build
 
 FROM scratch

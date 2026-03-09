@@ -12,16 +12,13 @@ to compile your plugin with exactly the same compiler as ReOxide itself.
 
 You need working ReOxide setup for building plugins, see the setup
 [guide](https://reoxide.eu/guide/getting-started). If you can run
-the `reoxide` command, then you can build the plugin by using meson:
-
-```sh
-$ meson setup build
-```
+the `reoxide` command, then you can build the plugin by using meson.
 
 ### Native
 **NB!** This will only work safely if you also compiled ReOxide yourself.
 
 ```
+$ meson setup build --buildtype release
 $ meson install -C build
 ```
 

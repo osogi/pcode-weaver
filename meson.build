@@ -2,8 +2,9 @@ project(
   'plugin-template',
   'cpp',
   version: '0.0.1',
+  meson_version: '>=1.10.0',  # codegen module
   default_options: [
-    'cpp_std=c++11',
+    'cpp_std=c++17',
     'warning_level=1',
     'debug=true',
     'default_library=shared'
@@ -35,3 +36,4 @@ if cc.get_argument_syntax() == 'gcc'
 endif
 
 subdir('simple')
+subdir('src/publisher')
