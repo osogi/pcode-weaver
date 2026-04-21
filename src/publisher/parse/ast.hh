@@ -1,10 +1,10 @@
 #pragma once
 
-#include "common/util.hh"
 #include "common/error.hh"
+#include "common/util.hh"
 
-#include <ghidra/types.h>
 #include <ghidra/opcodes.hh>
+#include <ghidra/types.h>
 
 #include <memory>
 #include <string>
@@ -63,7 +63,9 @@ public:
    * @brief Create new id
    * */
   const Id createId() {
-    return createId("_" + anonymousPrefix + "" + std::to_string(anonymNameCount++));
+    return createId(
+        "_" + anonymousPrefix + "" + std::to_string(anonymNameCount++)
+    );
   };
 
 private:
@@ -124,9 +126,9 @@ struct OutVarnodeConditionNoOutOr {
 
 struct OutVarnodeConditionNoOut {};
 
-using OutVarnodeCondition =
-    std::variant<OutVarnodeConditionDefault, OutVarnodeConditionNoOutOr,
-                 OutVarnodeConditionNoOut>;
+using OutVarnodeCondition = std::variant<
+    OutVarnodeConditionDefault, OutVarnodeConditionNoOutOr,
+    OutVarnodeConditionNoOut>;
 
 struct OpTypeScheme {
   InVarnodeConditions inVarnodeConds;
@@ -157,23 +159,23 @@ using PnodeTerm = std::variant<PnodeVar, PnodeVarWithType>;
 
 struct VarnodeDefedBy;
 struct PnodeThatTakeAsNthArg;
-struct PnodeThatTakeAsSomeArg;
+// struct PnodeThatTakeAsSomeArg;
 struct BasicBlockDominatedBy;
 
-using VarnodePattern =
-    std::variant<VarnodeTerm,        // vname OR vname(conditions) OR EMPTY
-                 Box<VarnodeDefedBy> // pnode_patter -> vname
-                 >;
-using PnodePattern =
-    std::variant<PnodeTerm,                  // opname OR opname(conditions)
-                 Box<PnodeThatTakeAsNthArg>, // vnode_pattern ->(N) opname
-                 Box<PnodeThatTakeAsSomeArg> // vnode_pattern -> opname
-                 >;
+using VarnodePattern = std::variant<
+    VarnodeTerm,        // vname OR vname(conditions) OR EMPTY
+    Box<VarnodeDefedBy> // pnode_patter -> vname
+    >;
+using PnodePattern = std::variant<
+    PnodeTerm,                 // opname OR opname(conditions)
+    Box<PnodeThatTakeAsNthArg> // vnode_pattern ->(N) opname
+    //  Box<PnodeThatTakeAsSomeArg> // vnode_pattern -> opname
+    >;
 
-using BasicBlockPattern =
-    std::variant<BasicBlockVar,             // bbname
-                 Box<BasicBlockDominatedBy> //  bb_pattern <= bbname
-                 >;
+using BasicBlockPattern = std::variant<
+    BasicBlockVar,             // bbname
+    Box<BasicBlockDominatedBy> //  bb_pattern <= bbname
+    >;
 
 struct VarnodeDefedBy {
   PnodePattern pp;
@@ -186,10 +188,10 @@ struct PnodeThatTakeAsNthArg {
   PnodeTerm p;
 };
 
-struct PnodeThatTakeAsSomeArg {
-  VarnodePattern vp;
-  PnodeTerm p;
-};
+// struct PnodeThatTakeAsSomeArg {
+//   VarnodePattern vp;
+//   PnodeTerm p;
+// };
 
 struct BasicBlockDominatedBy {
   BasicBlockPattern bbp;
@@ -217,19 +219,26 @@ using VarnodeActionTerm =
     std::variant<VarnodeVar, VarnodeEmpty, VarnodeSpecSize>;
 using PnodeActionTerm = std::variant<PnodeVar, PnodeSpecTypeAndLoc>;
 
+struct EmptyActionDeletePnode {
+  PnodeVar targetPnode;
+};
+
 struct VarnodeSetAsPnodeOut;
 struct PnodeSetNthArg;
 
-using VarnodeAction =
-    std::variant<VarnodeActionTerm, // vname OR new_vname(size)
-                                    // OR EMPTY
-                 Box<VarnodeSetAsPnodeOut> // pnode_action ->> vname
-                 >;
+using VarnodeAction = std::variant<
+    VarnodeActionTerm,        // vname OR new_vname(size)
+                              // OR EMPTY
+    Box<VarnodeSetAsPnodeOut> // pnode_action ->> vname
+    >;
 
-using PnodeAction =
-    std::variant<PnodeActionTerm,    // opname OR opname(op BEFORE/AFTER old_opname)
-                 Box<PnodeSetNthArg> // vnode_action ->>(N) opname
-                 >;
+using PnodeAction = std::variant<
+    PnodeActionTerm,    // opname OR opname(op BEFORE/AFTER old_opname)
+    Box<PnodeSetNthArg> // vnode_action ->>(N) opname
+    >;
+
+using EmptyAction = std::variant<EmptyActionDeletePnode // DELETE opname
+                                 >;
 
 struct VarnodeSetAsPnodeOut {
   PnodeAction pa;
@@ -242,7 +251,7 @@ struct PnodeSetNthArg {
   PnodeActionTerm p;
 };
 
-using RuleAction = std::variant<VarnodeAction, PnodeAction>;
+using RuleAction = std::variant<VarnodeAction, PnodeAction, EmptyAction>;
 
 struct Rule {
   std::vector<RulePattern> patterns;

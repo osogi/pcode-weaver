@@ -69,6 +69,7 @@
 %token NO_OUT_OR_KEYWORD "NoOutOr"
 %token TRUE_KEYWORD "True"
 %token FALSE_KEYWORD "False"
+%token DELETE_KEYWORD "DELETE"
 
 
 
@@ -128,6 +129,7 @@
 %type <ast::PnodeActionTerm> pnode_action_term
 %type <ast::VarnodeAction> varnode_action
 %type <ast::PnodeAction> pnode_action
+%type <ast::EmptyAction> empty_action
 %type <ast::RuleAction> rule_action
 
 %type <std::vector<ast::RulePattern>> patterns
@@ -287,12 +289,14 @@ pnode_pattern:
           ast::PnodeThatTakeAsNthArg{std::move($vp), ghidra::int4($num), $pt}
           );
       }
+/*
   | varnode_pattern[vp] RIGHT_ARROW pnode_term[pt] 
       {
         $$ = std::make_unique<ast::PnodeThatTakeAsSomeArg>(
           ast::PnodeThatTakeAsSomeArg{std::move($vp), $pt}
           );
-      }
+      } 
+*/
 
 basic_block_pattern:
     bb_var 
@@ -317,9 +321,6 @@ varnode_action_term:
     EMPTY_KEYWORD                           { $$ = ast::VarnodeEmpty{}; }
   | varnode_var                             { $$ = $1; }
   | varnode_var[vv] LPAREN size[sz] RPAREN  { $$ = ast::VarnodeSpecSize{$vv, $sz}; }
-
-
-
 
 pnode_action_term:
     pnode_var 
@@ -348,9 +349,13 @@ pnode_action:
         );
     }
 
+empty_action:
+  DELETE_KEYWORD pnode_var { $$ = ast::EmptyActionDeletePnode{$2}; }
+
 rule_action:
     pnode_action   { $$ = std::move($1); }
   | varnode_action { $$ = std::move($1); }
+  | empty_action   { $$ = std::move($1); }
 %%
 
 

@@ -135,6 +135,7 @@ public:
   }
 
   virtual int4 apply(Funcdata &data) override {
+    AppInfo.getActiveProject().getProjectLocator().getMarkerFile();
     reox.sendString("simple_action triggered for " + data.getName());
     data.warningHeader("SimpleAction was applied on this function.");
     return 0;

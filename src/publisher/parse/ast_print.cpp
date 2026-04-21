@@ -167,12 +167,12 @@ pnodeThatTakeAsNthArg(std::ostream &os, const PnodeThatTakeAsNthArg &n) {
   pnodeTerm(os, n.p);
 }
 
-static void
-pnodeThatTakeAsSomeArg(std::ostream &os, const PnodeThatTakeAsSomeArg &n) {
-  varnodePattern(os, n.vp);
-  os << " -> ";
-  pnodeTerm(os, n.p);
-}
+// static void
+// pnodeThatTakeAsSomeArg(std::ostream &os, const PnodeThatTakeAsSomeArg &n) {
+//   varnodePattern(os, n.vp);
+//   os << " -> ";
+//   pnodeTerm(os, n.p);
+// }
 
 static void bbDominatedBy(std::ostream &os, const BasicBlockDominatedBy &n) {
   bbPattern(os, n.bbp);
@@ -197,9 +197,9 @@ static void pnodePattern(std::ostream &os, const PnodePattern &pp) {
           [&](const Box<PnodeThatTakeAsNthArg> &b) {
             box(os, b, pnodeThatTakeAsNthArg);
           },
-          [&](const Box<PnodeThatTakeAsSomeArg> &b) {
-            box(os, b, pnodeThatTakeAsSomeArg);
-          }
+          // [&](const Box<PnodeThatTakeAsSomeArg> &b) {
+          //   box(os, b, pnodeThatTakeAsSomeArg);
+          // }
       },
       pp
   );
@@ -251,8 +251,8 @@ static void pnodeActionTerm(std::ostream &os, const PnodeActionTerm &t) {
           [&](const PnodeVar &p) { pnodeVar(os, p); },
           [&](const PnodeSpecTypeAndLoc &n) {
             pnodeVar(os, n.newVar);
-            os << "(" ;
-            opType(os, n.opType); 
+            os << "(";
+            opType(os, n.opType);
             os << (n.isInsertBefore ? " BEFORE " : " AFTER ");
             pnodeVar(os, n.oldVar);
             os << ")";
@@ -277,6 +277,12 @@ static void pnodeSetNthArg(std::ostream &os, const PnodeSetNthArg &n) {
   pnodeActionTerm(os, n.p);
 }
 
+static void
+emptyActionDeletePnode(std::ostream &os, const EmptyActionDeletePnode &act) {
+  os << "DELETE ";
+  pnodeVar(os, act.targetPnode);
+}
+
 static void varnodeAction(std::ostream &os, const VarnodeAction &a) {
   std::visit(
       util::overloaded{
@@ -299,11 +305,23 @@ static void pnodeAction(std::ostream &os, const PnodeAction &a) {
   );
 }
 
+static void emptyAction(std::ostream &os, const EmptyAction &ea) {
+  std::visit(
+      util::overloaded{
+          [&](const EmptyActionDeletePnode &x) {
+            emptyActionDeletePnode(os, x);
+          },
+      },
+      ea
+  );
+}
+
 static void ruleAction(std::ostream &os, const RuleAction &ra) {
   std::visit(
       util::overloaded{
           [&](const VarnodeAction &x) { varnodeAction(os, x); },
-          [&](const PnodeAction &x) { pnodeAction(os, x); }
+          [&](const PnodeAction &x) { pnodeAction(os, x); },
+          [&](const EmptyAction &x) { emptyAction(os, x); },
       },
       ra
   );

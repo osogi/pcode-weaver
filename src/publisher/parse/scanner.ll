@@ -51,6 +51,7 @@ BEFORE  { return yy::Parser::make_BEFORE_KEYWORD(driver.location()); }
 EMPTY   { return yy::Parser::make_EMPTY_KEYWORD(driver.location()); }
 NoOut   { return yy::Parser::make_NO_OUT_KEYWORD(driver.location()); }
 NoOutOr { return yy::Parser::make_NO_OUT_OR_KEYWORD(driver.location()); }
+DELETE   { return yy::Parser::make_DELETE_KEYWORD(driver.location()); }
 
 (TRUE)|(True)|(true)    { return yy::Parser::make_TRUE_KEYWORD(driver.location()); }
 (FALSE)|(False)|(false) { return yy::Parser::make_FALSE_KEYWORD(driver.location()); }
