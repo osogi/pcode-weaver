@@ -11,7 +11,7 @@
 
 namespace yy {
 Driver::Driver()
-    : cntx(), opTypePredefFactory(*this, defaultOpTypePredefined),
+    : cntx(), opTypePredefFactory(*this, defaultOpType),
       scanner(*this), parser(scanner, *this) {};
 
 int Driver::parse() {
@@ -47,8 +47,8 @@ void Driver::error(const yy::location &loc, const std::string &message) {
   error(s.str());
 }
 
-Errorable<ast::OpTypePredefined> Driver::getOpTypeByToken(OpTypeToken token) {
-  return opTypePredefFactory.getOpTypePredefined(token);
+Errorable<ast::OpType> Driver::getOpTypeByToken(OpTypeToken token) {
+  return opTypePredefFactory.getOpType(token);
 };
 
 void Driver::setParsedRule(ast::Rule &&rule) { parsedRule = std::move(rule); };

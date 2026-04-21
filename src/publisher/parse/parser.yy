@@ -96,16 +96,17 @@
 %token <std::string> IDENTIFIER "variable name"
 %token <uint64_t> NUMBER "number"
 
-%type <int> op_type_predefined_names
+%type <int> op_type_token
 %type <bool> boolean
 %type <ast::Size> size
 %type <ast::BasicBlockVar> bb_var
 %type <ast::VarnodeType> varnode_type
 %type <ast::VarnodeVar> varnode_var
 %type <ast::PnodeVar> pnode_var
-%type <ast::OpTypePredefined> op_type_predefined
-%type <ast::OpTypeGeneral> op_type_general
 %type <ast::OpType> op_type
+%type <ast::PnodeType> pnode_type
+
+/*
 %type <ast::InVarnodeConditionsSpecial> in_varnodes_conds_special
 %type <ast::InVarnodeCondition> in_varnode_cond
 %type <ast::InVarnodeConditionsArray> in_varnodes_conds_arr
@@ -114,7 +115,7 @@
 %type <ast::OutVarnodeConditionNoOutOr> out_varnode_cond_no_out_or
 %type <ast::OutVarnodeConditionNoOut> out_varnode_cond_no_out
 %type <ast::OutVarnodeCondition> out_varnode_cond
-%type <ast::PnodeType> pnode_type
+*/
 
 %type <ast::PnodeTerm> pnode_term
 %type <ast::VarnodeTerm> varnode_term
@@ -160,6 +161,7 @@ pnode_var:
 varnode_type:
   size COMMA bb_var { $$ = ast::VarnodeType{$1, $3};}
 
+/*
 in_varnode_cond:
   size { $$ = ast::InVarnodeCondition{$1}; }
 
@@ -196,14 +198,15 @@ out_varnode_cond:
     out_varnode_cond_def        { $$ = $1; }
   | out_varnode_cond_no_out_or  { $$ = $1; }
   | out_varnode_cond_no_out     { $$ = $1; }
+*/
 
 // TODO: need to rework this
-op_type_predefined_names:
+op_type_token:
     INT_ADD { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_ADD; }
   | INT_SUB { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_SUB; }
 
-op_type_predefined:
-  op_type_predefined_names  { 
+op_type:
+  op_type_token { 
                               auto res = driver.getOpTypeByToken($1);
                               if (res.has_value()){
                                 $$ = res.value();
@@ -211,20 +214,6 @@ op_type_predefined:
                                 syntax_error(@1, res.error().message());
                               }
                             }
-
-op_type_general:
-    in_varnodes_conds COMMA out_varnode_cond
-      {
-        $$ = ast::OpTypeGeneral{$1, $3, false};
-      }
-  | in_varnodes_conds COMMA out_varnode_cond COMMA boolean 
-      {
-        $$ = ast::OpTypeGeneral{$1, $3, $5};
-      }
-
-op_type:
-    op_type_predefined            { $$ = $1; }
-  | LPAREN op_type_general RPAREN { $$ = $2; }
 
 pnode_type:
   op_type COMMA bb_var { $$ = ast::PnodeType($1, $3); }
@@ -330,13 +319,15 @@ varnode_action_term:
   | varnode_var[vv] LPAREN size[sz] RPAREN  { $$ = ast::VarnodeSpecSize{$vv, $sz}; }
 
 
+
+
 pnode_action_term:
     pnode_var 
       { $$ = $1; }
-  | pnode_var[new_pv] LPAREN BEFORE_KEYWORD pnode_var[old_pv] RPAREN  
-    { $$ =  ast::PnodeSpecLocation{$new_pv, true, $old_pv}; }
-  | pnode_var[new_pv] LPAREN AFTER_KEYWORD pnode_var[old_pv] RPAREN  
-    { $$ =  ast::PnodeSpecLocation{$new_pv, false, $old_pv}; }
+  | pnode_var[new_pv] LPAREN op_type[op_tp] BEFORE_KEYWORD pnode_var[old_pv] RPAREN  
+    { $$ =  ast::PnodeSpecTypeAndLoc{$new_pv, $op_tp, true, $old_pv}; }
+  | pnode_var[new_pv] LPAREN op_type[op_tp] AFTER_KEYWORD pnode_var[old_pv] RPAREN  
+    { $$ =  ast::PnodeSpecTypeAndLoc{$new_pv, $op_tp, false, $old_pv}; }
 
 varnode_action:
     varnode_action_term 

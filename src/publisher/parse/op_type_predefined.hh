@@ -11,28 +11,27 @@ class Driver; // forward declaration
 
 using OpTypeToken = int; // yy::Parser::token_kind_type;
 
-class OpTypePredefinedFactory {
+class OpTypeFactory {
 public:
-  OpTypePredefinedFactory(
+  OpTypeFactory(
       yy::Driver &driver,
-      std::unordered_map<OpTypeToken, ast::OpTypePredefined> name2tp
+      std::unordered_map<OpTypeToken, ast::OpType> name2tp
   )
       : driver(driver), name2tp(name2tp) {};
 
-  Errorable<ast::OpTypePredefined>
-  getOpTypePredefined(OpTypeToken token);
+  Errorable<ast::OpType> getOpType(OpTypeToken token);
 
 private:
   yy::Driver &driver;
-  std::unordered_map<OpTypeToken, ast::OpTypePredefined> name2tp;
+  std::unordered_map<OpTypeToken, ast::OpType> name2tp;
   uint32_t counter = 0;
 
   std::string genNewName(std::string oldName){
     return "_pts"  + std::to_string(counter) + oldName;
   }
 
-  ast::OpTypePredefined alphaUpdate(const ast::OpTypePredefined& old);
-  ast::OpTypeGeneral alphaUpdate(const ast::OpTypeGeneral& old);
+  ast::OpType alphaUpdate(const ast::OpType& old);
+  ast::OpTypeScheme alphaUpdate(const ast::OpTypeScheme& old);
   ast::InVarnodeConditions alphaUpdate(const ast::InVarnodeConditions& old);
   ast::InVarnodeConditionsArray alphaUpdate(const ast::InVarnodeConditionsArray& old);
   ast::InVarnodeCondition alphaUpdate(const ast::InVarnodeCondition& old);
@@ -43,4 +42,4 @@ private:
 };
 
 
-extern std::unordered_map<OpTypeToken, ast::OpTypePredefined> defaultOpTypePredefined;
+extern std::unordered_map<OpTypeToken, ast::OpType> defaultOpType;

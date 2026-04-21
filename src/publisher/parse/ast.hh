@@ -4,6 +4,7 @@
 #include "common/error.hh"
 
 #include <ghidra/types.h>
+#include <ghidra/opcodes.hh>
 
 #include <memory>
 #include <string>
@@ -127,18 +128,17 @@ using OutVarnodeCondition =
     std::variant<OutVarnodeConditionDefault, OutVarnodeConditionNoOutOr,
                  OutVarnodeConditionNoOut>;
 
-struct OpTypeGeneral {
+struct OpTypeScheme {
   InVarnodeConditions inVarnodeConds;
   OutVarnodeCondition outVarnodeCond;
   bool isMultiequal; // for now it's always false
 };
 
-struct OpTypePredefined {
+struct OpType {
   std::string opName;
-  OpTypeGeneral generalType;
+  OpTypeScheme scheme;
+  ghidra::OpCode ghidraOpCode;
 };
-
-using OpType = std::variant<OpTypeGeneral, OpTypePredefined>;
 
 struct PnodeType {
   OpType optype;
@@ -201,8 +201,9 @@ using RulePattern =
 
 // Action
 
-struct PnodeSpecLocation {
+struct PnodeSpecTypeAndLoc {
   PnodeVar newVar;
+  OpType opType;
   bool isInsertBefore; // True - Before; False - After
   PnodeVar oldVar;
 };
@@ -214,7 +215,7 @@ struct VarnodeSpecSize {
 
 using VarnodeActionTerm =
     std::variant<VarnodeVar, VarnodeEmpty, VarnodeSpecSize>;
-using PnodeActionTerm = std::variant<PnodeVar, PnodeSpecLocation>;
+using PnodeActionTerm = std::variant<PnodeVar, PnodeSpecTypeAndLoc>;
 
 struct VarnodeSetAsPnodeOut;
 struct PnodeSetNthArg;

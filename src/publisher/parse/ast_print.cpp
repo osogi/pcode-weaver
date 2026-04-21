@@ -96,7 +96,7 @@ outVarnodeCondition(std::ostream &os, const OutVarnodeCondition &cnd) {
   );
 }
 
-static void opTypeGeneral(std::ostream &os, const OpTypeGeneral &opt) {
+static void opTypeScheme(std::ostream &os, const OpTypeScheme &opt) {
   os << "(";
   inVarnodeConditions(os, opt.inVarnodeConds);
   os << ", ";
@@ -104,18 +104,9 @@ static void opTypeGeneral(std::ostream &os, const OpTypeGeneral &opt) {
   os << ", " << opt.isMultiequal << ")";
 }
 
-static void opTypePredefined(std::ostream &os, const OpTypePredefined &opt) {
-  os << opt.opName;
-}
-
 static void opType(std::ostream &os, const OpType &opt) {
-  std::visit(
-      util::overloaded{
-          [&](const OpTypeGeneral &gen) { opTypeGeneral(os, gen); },
-          [&](const OpTypePredefined &predef) { opTypePredefined(os, predef); }
-      },
-      opt
-  );
+  os << opt.opName;
+  // opTypeScheme(os, opt.scheme);
 }
 
 static void pnodeType(std::ostream &os, const PnodeType &pt) {
@@ -258,9 +249,11 @@ static void pnodeActionTerm(std::ostream &os, const PnodeActionTerm &t) {
   std::visit(
       util::overloaded{
           [&](const PnodeVar &p) { pnodeVar(os, p); },
-          [&](const PnodeSpecLocation &n) {
+          [&](const PnodeSpecTypeAndLoc &n) {
             pnodeVar(os, n.newVar);
-            os << "(" << (n.isInsertBefore ? "BEFORE " : "AFTER ");
+            os << "(" ;
+            opType(os, n.opType); 
+            os << (n.isInsertBefore ? " BEFORE " : " AFTER ");
             pnodeVar(os, n.oldVar);
             os << ")";
           }

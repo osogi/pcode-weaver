@@ -35,9 +35,13 @@ InVarnodeConditions createInConds(const std::string &str) {
 }
 
 #define OP(token, inConds, outCond)                                            \
-  (std::pair<OpTypeToken, OpTypePredefined>{                   \
+  (std::pair<OpTypeToken, OpType>{                                   \
       yy::Parser::token_kind_type::RULES_TOKEN_##token,                        \
-      OpTypePredefined{#token, OpTypeGeneral{inConds, outCond, false}}         \
+      OpType{                                                        \
+          #token,                                                              \
+          OpTypeScheme{inConds, outCond, false},                              \
+          ghidra::OpCode::CPUI_##token                                         \
+      }                                                                        \
   })
 
 #define OP_CUSTOM_OUT(name, inCondsRaw, outCond)                               \
@@ -50,15 +54,13 @@ InVarnodeConditions createInConds(const std::string &str) {
 
 #define STRVEC(...) (std::vector<std::string>{__VA_ARGS__})
 
-std::unordered_map<OpTypeToken, OpTypePredefined>
-    defaultOpTypePredefined = {
-        OP_DEFAULT(INT_ADD, STRVEC("a", "a"), "a"),
-        OP_DEFAULT(INT_SUB, STRVEC("a", "a"), "a"),
+std::unordered_map<OpTypeToken, OpType> defaultOpType = {
+    OP_DEFAULT(INT_ADD, STRVEC("a", "a"), "a"),
+    OP_DEFAULT(INT_SUB, STRVEC("a", "a"), "a"),
 };
 
-Errorable<OpTypePredefined> OpTypePredefinedFactory::getOpTypePredefined(
-    OpTypeToken token
-) {
+
+Errorable<OpType> OpTypeFactory::getOpType(OpTypeToken token) {
   counter++;
   auto res = name2tp.find(token);
   if (res != name2tp.end()) {
@@ -68,15 +70,16 @@ Errorable<OpTypePredefined> OpTypePredefinedFactory::getOpTypePredefined(
   }
 }
 
-OpTypePredefined
-OpTypePredefinedFactory::alphaUpdate(const OpTypePredefined &old) {
-  return OpTypePredefined{
-      .opName = old.opName, .generalType = alphaUpdate(old.generalType)
+OpType OpTypeFactory::alphaUpdate(const OpType &old) {
+  return OpType{
+      .opName = old.opName,
+      .scheme = alphaUpdate(old.scheme),
+      .ghidraOpCode = old.ghidraOpCode
   };
 };
 
-OpTypeGeneral OpTypePredefinedFactory::alphaUpdate(const OpTypeGeneral &old) {
-  return OpTypeGeneral{
+OpTypeScheme OpTypeFactory::alphaUpdate(const OpTypeScheme &old) {
+  return OpTypeScheme{
       .inVarnodeConds = alphaUpdate(old.inVarnodeConds),
       .outVarnodeCond = alphaUpdate(old.outVarnodeCond),
       .isMultiequal = old.isMultiequal
@@ -84,7 +87,7 @@ OpTypeGeneral OpTypePredefinedFactory::alphaUpdate(const OpTypeGeneral &old) {
 };
 
 InVarnodeConditions
-OpTypePredefinedFactory::alphaUpdate(const InVarnodeConditions &old) {
+OpTypeFactory::alphaUpdate(const InVarnodeConditions &old) {
   return std::visit(
       util::overloaded{
           [this](const InVarnodeConditionsArray &cond) -> InVarnodeConditions {
@@ -99,7 +102,7 @@ OpTypePredefinedFactory::alphaUpdate(const InVarnodeConditions &old) {
 };
 
 InVarnodeConditionsArray
-OpTypePredefinedFactory::alphaUpdate(const InVarnodeConditionsArray &old) {
+OpTypeFactory::alphaUpdate(const InVarnodeConditionsArray &old) {
   return InVarnodeConditionsArray{
       .array = map_vector(
           old.array,
@@ -111,11 +114,11 @@ OpTypePredefinedFactory::alphaUpdate(const InVarnodeConditionsArray &old) {
 };
 
 InVarnodeCondition
-OpTypePredefinedFactory::alphaUpdate(const InVarnodeCondition &old) {
+OpTypeFactory::alphaUpdate(const InVarnodeCondition &old) {
   return InVarnodeCondition{.size = alphaUpdate(old.size)};
 };
 
-Size OpTypePredefinedFactory::alphaUpdate(const Size &old) {
+Size OpTypeFactory::alphaUpdate(const Size &old) {
   return std::visit(
       util::overloaded{
           [this](const Id &id) -> Size { return alphaUpdate(id); },
@@ -125,18 +128,18 @@ Size OpTypePredefinedFactory::alphaUpdate(const Size &old) {
   );
 };
 
-Id OpTypePredefinedFactory::alphaUpdate(const Id &old) {
+Id OpTypeFactory::alphaUpdate(const Id &old) {
   return helpIdFactory.createId(genNewName(old.getName()));
 };
 
 OutVarnodeCondition
-OpTypePredefinedFactory::alphaUpdate(const OutVarnodeCondition &old) {
+OpTypeFactory::alphaUpdate(const OutVarnodeCondition &old) {
   return std::visit(
       util::overloaded{
-          [this](const OutVarnodeConditionDefault &cond) -> OutVarnodeCondition {
-            return alphaUpdate(cond);
-          },
-          [this](const OutVarnodeConditionNoOutOr &cond) -> OutVarnodeCondition {
+          [this](const OutVarnodeConditionDefault &cond)
+              -> OutVarnodeCondition { return alphaUpdate(cond); },
+          [this](const OutVarnodeConditionNoOutOr &cond)
+              -> OutVarnodeCondition {
             return OutVarnodeConditionNoOutOr{.alt = alphaUpdate(cond.alt)};
           },
           [](const OutVarnodeConditionNoOut &) -> OutVarnodeCondition {
@@ -148,6 +151,6 @@ OpTypePredefinedFactory::alphaUpdate(const OutVarnodeCondition &old) {
 };
 
 OutVarnodeConditionDefault
-OpTypePredefinedFactory::alphaUpdate(const OutVarnodeConditionDefault &old) {
+OpTypeFactory::alphaUpdate(const OutVarnodeConditionDefault &old) {
   return OutVarnodeConditionDefault{.size = alphaUpdate(old.size)};
 };

@@ -37,7 +37,7 @@ class Driver {
     void error(const std::string &message);
     void error(const yy::location &loc, const std::string &message);
 
-    Errorable<ast::OpTypePredefined>  getOpTypeByToken(OpTypeToken token);
+    Errorable<ast::OpType>  getOpTypeByToken(OpTypeToken token);
 
     // Set rule upon completion of parsing
     void setParsedRule(ast::Rule &&rule);
@@ -45,7 +45,7 @@ class Driver {
     ast::Rule parsedRule;
 
     Context cntx;
-    OpTypePredefinedFactory opTypePredefFactory;
+    OpTypeFactory opTypePredefFactory;
 
     Scanner scanner;
     Parser parser;
