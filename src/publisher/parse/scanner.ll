@@ -12,6 +12,7 @@
 
 %{
   #include <sstream>
+  #include <iomanip>
   #include <iostream>
   #include "parse/driver.hh"
 
@@ -24,17 +25,17 @@
 
   #define YY_USER_ACTION driver.locationAdvanceToken(yyleng);
   
-  #define SCAN_NUMBER(numtext)                                                   \
+  #define SCAN_NUMBER(numtext, cont)                                           \
   {                                                                            \
     std::istringstream s(numtext);                                             \
-    uint64_t val;                                                              \
-    s >> val;                                                                  \
+    int64_t val;                                                               \
+    s >> std::setbase(0) >> val;                                               \
     if (!s) {                                                                  \
       std::ostringstream s;                                                    \
       s << "Scanner: couldn't parse number [" << numtext << "]";               \
       driver.error(driver.location(), s.str());                                \
     } else {                                                                   \
-      return yy::Parser::make_NUMBER(val, driver.location());                  \
+      return cont(val, driver.location());                                     \
     }                                                                          \
   }
 %}
@@ -74,8 +75,11 @@ INT\_SUB { return yy::Parser::make_INT_SUB(driver.location());}
 
 [a-zA-Z][[a-zA-Z0-9_]+] { return yy::Parser::make_IDENTIFIER(yytext, driver.location()); }
 
-[0-9]+     { SCAN_NUMBER(yytext); }
-0x[0-9a-fA-F]+  { SCAN_NUMBER(yytext); }
+[#]\-?[0-9]+          { SCAN_NUMBER(yytext + 1,  yy::Parser::make_CONST); }
+[#]\-?0x[0-9a-fA-F]+  { SCAN_NUMBER(yytext + 1,  yy::Parser::make_CONST); }
+
+[0-9]+     { SCAN_NUMBER(yytext,  yy::Parser::make_NUMBER); }
+0x[0-9a-fA-F]+  { SCAN_NUMBER(yytext,  yy::Parser::make_NUMBER); }
 
 [\r\t\f\v ] { } //ignore it
 \n { driver.locationAdvanceNewLine(); }

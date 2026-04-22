@@ -92,6 +92,7 @@
 %left DOUBLE_RIGHT_ARROW
 
 %token <std::string> VARNODE_IDENTIFIER "varnode name"
+%token <int64_t> CONST "constant"
 %token <std::string> PNODE_IDENTIFIER "pnode name"
 %token <std::string> BASIC_BLOCK_IDENTIFIER "basic block name"
 %token <std::string> IDENTIFIER "variable name"
@@ -103,6 +104,7 @@
 %type <ast::BasicBlockVar> bb_var
 %type <ast::VarnodeType> varnode_type
 %type <ast::VarnodeVar> varnode_var
+%type <ast::VarnodeConst> varnode_const
 %type <ast::PnodeVar> pnode_var
 %type <ast::OpType> op_type
 %type <ast::PnodeType> pnode_type
@@ -155,6 +157,9 @@ bb_var:
 
 varnode_var:
   VARNODE_IDENTIFIER {$$ = ast::VarnodeVar{ driver.cntx.varnodeVarFactory.createId($1) };}
+
+varnode_const:
+  CONST { $$ = ast::VarnodeConst{ $1 };}
 
 pnode_var:
   PNODE_IDENTIFIER {$$ = ast::PnodeVar{ driver.cntx.pnodeVarFactory.createId($1) };}
@@ -258,7 +263,8 @@ actions:
 varnode_term:
     EMPTY_KEYWORD                           { $$ = ast::VarnodeEmpty{}; }
   | varnode_var                             { $$ = $1; }
-  | varnode_var LPAREN  varnode_type RPAREN { $$ = ast::VarnodeVarWithType{$1, $3}; };
+  | varnode_var LPAREN  varnode_type RPAREN { $$ = ast::VarnodeVarWithType{$1, $3}; }
+  | varnode_const                           { $$ = $1; }
 
 
 pnode_term:
@@ -339,6 +345,7 @@ varnode_action:
           ast::VarnodeSetAsPnodeOut{std::move($pa), $vt}
         );
       }
+  | varnode_const { $$ = $1; }
 
 pnode_action:
     pnode_action_term { $$ = $1; }

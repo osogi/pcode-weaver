@@ -100,9 +100,13 @@ struct VarnodeVarWithType {
   VarnodeType vntype;
 };
 
+struct VarnodeConst {
+  int64_t value;
+};
+
 struct VarnodeEmpty {};
 
-using VarnodeTerm = std::variant<VarnodeVar, VarnodeVarWithType, VarnodeEmpty>;
+using VarnodeTerm = std::variant<VarnodeVar, VarnodeVarWithType, VarnodeEmpty, VarnodeConst>;
 
 struct InVarnodeCondition {
   Size size;
@@ -216,7 +220,7 @@ struct VarnodeSpecSize {
 };
 
 using VarnodeActionTerm =
-    std::variant<VarnodeVar, VarnodeEmpty, VarnodeSpecSize>;
+    std::variant<VarnodeVar, VarnodeEmpty, VarnodeConst, VarnodeSpecSize>;
 using PnodeActionTerm = std::variant<PnodeVar, PnodeSpecTypeAndLoc>;
 
 struct EmptyActionDeletePnode {

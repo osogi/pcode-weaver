@@ -10,6 +10,7 @@ static void id(std::ostream &os, const Id &x) {
 }
 
 static void varnodeVar(std::ostream &os, const VarnodeVar &v) { id(os, v.id); }
+static void varnodeConst(std::ostream &os, const VarnodeConst &c) { os << "#" << c.value; };
 static void pnodeVar(std::ostream &os, const PnodeVar &p) { id(os, p.id); }
 static void bbVar(std::ostream &os, const BasicBlockVar &b) { id(os, b.id); }
 
@@ -134,7 +135,8 @@ static void varnodeTerm(std::ostream &os, const VarnodeTerm &t) {
             varnodeVar(os, vt.var);
             varnodeType(os, vt.vntype);
           },
-          [&](const VarnodeEmpty &) { os << "EMPTY"; }
+          [&](const VarnodeEmpty &) { os << "EMPTY"; },
+          [&](const VarnodeConst &c) { varnodeConst(os, c); }
       },
       t
   );
@@ -239,7 +241,8 @@ static void varnodeActionTerm(std::ostream &os, const VarnodeActionTerm &t) {
             os << "(";
             size(os, n.size);
             os << ")";
-          }
+          },
+          [&](const VarnodeConst &c) { varnodeConst(os, c); }
       },
       t
   );
