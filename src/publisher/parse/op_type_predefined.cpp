@@ -12,9 +12,9 @@ static IdFactory helpIdFactory("_predef_op_tp_");
 
 Size createSize(const std::string &varName) {
   if (varName == "_") {
-    return helpIdFactory.createId();
+    return helpIdFactory.createId(false);
   }
-  return helpIdFactory.createId(varName);
+  return helpIdFactory.createId(varName, false);
 }
 
 // useless ?
@@ -129,7 +129,7 @@ Size OpTypeFactory::alphaUpdate(const Size &old) {
 };
 
 Id OpTypeFactory::alphaUpdate(const Id &old) {
-  return helpIdFactory.createId(genNewName(old.getName()));
+  return helpIdFactory.createId(genNewName(old.getName()), false);
 };
 
 OutVarnodeCondition

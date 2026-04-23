@@ -351,3 +351,8 @@ std::ostream &operator<<(std::ostream &os, const ast::Rule &r) {
   ast::print::rule(os, r);
   return os;
 }
+
+std::ostream &operator<<(std::ostream &os, const ast::Id &id) {
+  ast::print::id(os, id);
+  return os;
+}

@@ -19,14 +19,34 @@ template <class T> using Box = std::unique_ptr<T>;
 class Id {
 public:
   Id() : num(-1), name("UNDEFINED") {};
-  Id(std::string _name, size_t _num) : num(_num), name(_name) {};
+  Id(std::string _name, size_t _num, bool _userDefined = false) : num(_num), name(_name), userDefined(_userDefined){};
 
-  size_t getNum() { return num; };
+  std::weak_ordering operator<=>(const Id &other) const {
+    std::weak_ordering res = other.userDefined <=> this->userDefined; // it's not typo; just Userdefined < NotUserdefined
+    if(res == 0){
+      res = this->num <=> other.num;
+    }
+
+    return res;
+  }
+
+  bool operator==(const Id &other) const = default;
+
+
+  size_t getNum() const { return num; };
   const std::string getName() const { return name; };
+
+  size_t hash() const {
+    size_t res = 0;
+    hash_combine(res, this->getName());
+    hash_combine(res, this->getNum());
+    return res;
+  }
 
 private:
   size_t num;
   std::string name;
+  bool userDefined = 0;
 };
 
 class IdFactory {
@@ -48,12 +68,12 @@ public:
   /**
    * @brief Get created or create id with target name
    * */
-  const Id createId(std::string name) {
+  const Id createId(std::string name, bool userDefined = false) {
     auto res = getIdByName(name);
     if (res.has_value()) {
       return res.value();
     } else {
-      Id newId(name, idCount++);
+      Id newId(name, idCount++, userDefined);
       map[name] = newId;
       return newId;
     }
@@ -62,9 +82,9 @@ public:
   /**
    * @brief Create new id
    * */
-  const Id createId() {
+  const Id createId(bool userDefined = false) {
     return createId(
-        "_" + anonymousPrefix + "" + std::to_string(anonymNameCount++)
+        "_" + anonymousPrefix + "" + std::to_string(anonymNameCount++), userDefined
     );
   };
 
@@ -106,7 +126,8 @@ struct VarnodeConst {
 
 struct VarnodeEmpty {};
 
-using VarnodeTerm = std::variant<VarnodeVar, VarnodeVarWithType, VarnodeEmpty, VarnodeConst>;
+using VarnodeTerm =
+    std::variant<VarnodeVar, VarnodeVarWithType, VarnodeEmpty, VarnodeConst>;
 
 struct InVarnodeCondition {
   Size size;
@@ -263,3 +284,9 @@ struct Rule {
 };
 
 } // namespace ast
+
+namespace std {
+template <> struct hash<ast::Id> {
+  size_t operator()(const ast::Id &id) const { return id.hash(); }
+};
+} // namespace std

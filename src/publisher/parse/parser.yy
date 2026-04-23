@@ -147,22 +147,22 @@ boolean:
   | FALSE_KEYWORD { $$ = false; }
 
 size: 
-    IDENTIFIER  { $$ = driver.cntx.sizeVarFactory.createId($1); }
-  | UNDERSCORE  { $$ = driver.cntx.sizeVarFactory.createId(); };
+    IDENTIFIER  { $$ = driver.cntx.sizeVarFactory.createId($1, true); }
+  | UNDERSCORE  { $$ = driver.cntx.sizeVarFactory.createId(false); };
   | NUMBER      { $$ = ghidra::int4($1);}
 
 bb_var:
-    BASIC_BLOCK_IDENTIFIER { $$ = ast::BasicBlockVar{driver.cntx.basicBlockVarFactory.createId($1)};}
-  | UNDERSCORE             { $$ = ast::BasicBlockVar{driver.cntx.basicBlockVarFactory.createId()}; };
+    BASIC_BLOCK_IDENTIFIER { $$ = ast::BasicBlockVar{driver.cntx.basicBlockVarFactory.createId($1, true)};}
+  | UNDERSCORE             { $$ = ast::BasicBlockVar{driver.cntx.basicBlockVarFactory.createId(false)}; };
 
 varnode_var:
-  VARNODE_IDENTIFIER {$$ = ast::VarnodeVar{ driver.cntx.varnodeVarFactory.createId($1) };}
+  VARNODE_IDENTIFIER {$$ = ast::VarnodeVar{ driver.cntx.varnodeVarFactory.createId($1, true) };}
 
 varnode_const:
   CONST { $$ = ast::VarnodeConst{ $1 };}
 
 pnode_var:
-  PNODE_IDENTIFIER {$$ = ast::PnodeVar{ driver.cntx.pnodeVarFactory.createId($1) };}
+  PNODE_IDENTIFIER {$$ = ast::PnodeVar{ driver.cntx.pnodeVarFactory.createId($1, true) };}
 
 
 varnode_type:
