@@ -1,6 +1,7 @@
 #include "parse/driver.hh"
 #include "parse/ast_print.hh"
 #include "validate/solvers.hh"
+#include "validate/pcodegraph.hh"
 #include <iostream>
 
 std::ostream &operator<<(std::ostream &os, const Errorable<bool> &err) {

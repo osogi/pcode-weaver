@@ -19,11 +19,14 @@ template <class T> using Box = std::unique_ptr<T>;
 class Id {
 public:
   Id() : num(-1), name("UNDEFINED") {};
-  Id(std::string _name, size_t _num, bool _userDefined = false) : num(_num), name(_name), userDefined(_userDefined){};
+  Id(std::string _name, size_t _num, bool _userDefined = false)
+      : num(_num), name(_name), userDefined(_userDefined) {};
 
   std::weak_ordering operator<=>(const Id &other) const {
-    std::weak_ordering res = other.userDefined <=> this->userDefined; // it's not typo; just Userdefined < NotUserdefined
-    if(res == 0){
+    std::weak_ordering res =
+        other.userDefined <=>
+        this->userDefined; // it's not typo; just Userdefined < NotUserdefined
+    if (res == 0) {
       res = this->num <=> other.num;
     }
 
@@ -31,7 +34,6 @@ public:
   }
 
   bool operator==(const Id &other) const = default;
-
 
   size_t getNum() const { return num; };
   const std::string getName() const { return name; };
@@ -84,7 +86,8 @@ public:
    * */
   const Id createId(bool userDefined = false) {
     return createId(
-        "_" + anonymousPrefix + "" + std::to_string(anonymNameCount++), userDefined
+        "_" + anonymousPrefix + "" + std::to_string(anonymNameCount++),
+        userDefined
     );
   };
 
@@ -165,6 +168,12 @@ struct OpType {
   std::string opName;
   OpTypeScheme scheme;
   ghidra::OpCode ghidraOpCode;
+
+  std::weak_ordering operator<=>(const OpType &other) const {
+    return this->ghidraOpCode <=> other.ghidraOpCode;
+  }
+
+  bool operator==(const OpType &other) const { return (*this <=> other) == 0; };
 };
 
 struct PnodeType {
@@ -209,7 +218,7 @@ struct VarnodeDefedBy {
 
 struct PnodeThatTakeAsNthArg {
   VarnodePattern vp;
-  ghidra::int4 num;
+  uint32_t num;
   PnodeTerm p;
 };
 
