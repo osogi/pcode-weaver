@@ -10,9 +10,7 @@
 #include <sstream>
 
 namespace yy {
-Driver::Driver()
-    : cntx(), opTypePredefFactory(*this, defaultOpType),
-      scanner(*this), parser(scanner, *this) {};
+Driver::Driver() : cntx(), scanner(*this), parser(scanner, *this) {};
 
 int Driver::parse() {
   cntx.location.initialize();
@@ -48,7 +46,7 @@ void Driver::error(const yy::location &loc, const std::string &message) {
 }
 
 Errorable<ast::OpType> Driver::getOpTypeByToken(OpTypeToken token) {
-  return opTypePredefFactory.getOpType(token);
+  return cntx.opTypePredefFactory.getOpType(token);
 };
 
 void Driver::setParsedRule(ast::Rule &&rule) { parsedRule = std::move(rule); };

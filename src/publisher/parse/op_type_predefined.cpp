@@ -129,7 +129,7 @@ Size OpTypeFactory::alphaUpdate(const Size &old) {
 };
 
 Id OpTypeFactory::alphaUpdate(const Id &old) {
-  return helpIdFactory.createId(genNewName(old.getName()), false);
+  return sizeVarFactory.createId(genNewName(old.getName()), false);
 };
 
 OutVarnodeCondition

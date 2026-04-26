@@ -45,7 +45,6 @@ class Driver {
     ast::Rule parsedRule;
 
     Context cntx;
-    OpTypeFactory opTypePredefFactory;
 
     Scanner scanner;
     Parser parser;
