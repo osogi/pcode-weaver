@@ -8,6 +8,8 @@
 // generated headers
 #include "parse/parser.hh"
 
+#include <filesystem>
+
 namespace yy {
 class Driver {
   public:
@@ -17,15 +19,18 @@ class Driver {
      * Run parser. Results are stored inside.
      * \returns 0 on success, 1 on failure
      */
-    int parse();
+    int parse(const std::filesystem::path &targetFile);
 
     // Return parsed Rule
     const ast::Rule& getParsedRule();
 
+    
     friend Scanner;
     friend Parser;
+    
+    private:
+    void switch_streams(std::istream& newIn = std::cin, std::ostream& newErr = std::cerr);
 
-  private:
     // location update methods
     void locationAdvanceToken(size_t amount);
     void locationAdvanceNewLine();
@@ -48,5 +53,9 @@ class Driver {
 
     Scanner scanner;
     Parser parser;
+
+    bool meetErrorDuringParse = false;
+    std::string currentFile = "NO_SETTED";
+    std::ostream& errStream;
 };
 } // namespace yy

@@ -218,7 +218,7 @@ op_type:
                               if (res.has_value()){
                                 $$ = res.value();
                               }else{
-                                syntax_error(@1, res.error().message());
+                                error(@1, res.error().message());
                               }
                             }
 
@@ -291,11 +291,8 @@ pnode_pattern:
       }
   | varnode_pattern[vp] RIGHT_ARROW LPAREN NUMBER[num] RPAREN pnode_term[pt] 
       {
-        if($num < 0){
-          syntax_error(@num, "Expected non-negative number");
-        }
         $$ = std::make_unique<ast::PnodeThatTakeAsNthArg>(
-          ast::PnodeThatTakeAsNthArg{std::move($vp), ghidra::int4($num), $pt}
+          ast::PnodeThatTakeAsNthArg{std::move($vp), static_cast<uint32_t>($num), $pt}
           );
       }
 /*
@@ -354,11 +351,8 @@ pnode_action:
     pnode_action_term { $$ = $1; }
   | varnode_action[va] DOUBLE_RIGHT_ARROW LPAREN NUMBER[num] RPAREN pnode_action_term[pt]
     {
-      if($num < 0){
-        syntax_error(@num, "Expected non-negative number");
-      }
       $$ = std::make_unique<ast::PnodeSetNthArg>(
-          ast::PnodeSetNthArg{std::move($va), ghidra::int4($num), $pt}
+          ast::PnodeSetNthArg{std::move($va), static_cast<uint32_t>($num), $pt}
         );
     }
 

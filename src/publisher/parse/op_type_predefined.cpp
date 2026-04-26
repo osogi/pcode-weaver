@@ -54,6 +54,8 @@ InVarnodeConditions createInConds(const std::string &str) {
 
 #define STRVEC(...) (std::vector<std::string>{__VA_ARGS__})
 
+// ########## DEFINING OP TYPES ###################33
+
 std::unordered_map<OpTypeToken, OpType> defaultOpType = {
     OP_DEFAULT(INT_ADD, STRVEC("a", "a"), "a"),
     OP_DEFAULT(INT_SUB, STRVEC("a", "a"), "a"),

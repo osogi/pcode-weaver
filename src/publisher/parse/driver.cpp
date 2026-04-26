@@ -7,14 +7,27 @@
 
 #include "parse/driver.hh"
 
+#include <fstream>
 #include <sstream>
 
 namespace yy {
-Driver::Driver() : cntx(), scanner(*this), parser(scanner, *this) {};
+Driver::Driver()
+    : cntx(), scanner(*this), parser(scanner, *this), errStream(std::cerr) {};
 
-int Driver::parse() {
-  cntx.location.initialize();
-  return parser.parse();
+void Driver::switch_streams(std::istream &newIn, std::ostream &newErr) {
+  errStream.rdbuf(newErr.rdbuf());
+  scanner.switch_streams(newIn, newErr);
+}
+
+int Driver::parse(const std::filesystem::path &targetFile) {
+  currentFile = targetFile.string();
+  cntx.location.initialize(&currentFile);
+
+  std::ifstream in_stream(targetFile);
+  switch_streams(in_stream, errStream);
+
+  meetErrorDuringParse = false;
+  return parser.parse() || meetErrorDuringParse;
 }
 
 const ast::Rule &Driver::getParsedRule() { return parsedRule; }
@@ -34,7 +47,8 @@ void Driver::locationAdvanceNewLine() {
 const yy::location &Driver::location() const { return cntx.location; }
 
 void Driver::error(const std::string &message) {
-  std::cout << "Error: " << message << std::endl;
+  meetErrorDuringParse = true;
+  errStream << "Parser error: " << message << std::endl;
 }
 
 void Driver::error(const yy::location &loc, const std::string &message) {

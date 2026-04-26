@@ -281,7 +281,7 @@ struct VarnodeSetAsPnodeOut {
 
 struct PnodeSetNthArg {
   VarnodeAction va;
-  ghidra::int4 num;
+  uint32_t num;
   PnodeActionTerm p;
 };
 
