@@ -10,7 +10,9 @@ static void id(std::ostream &os, const Id &x) {
 }
 
 static void varnodeVar(std::ostream &os, const VarnodeVar &v) { id(os, v.id); }
-static void varnodeConst(std::ostream &os, const VarnodeConst &c) { os << "#" << c.value; };
+static void varnodeConst(std::ostream &os, const VarnodeConst &c) {
+  os << "#" << c.value;
+};
 static void pnodeVar(std::ostream &os, const PnodeVar &p) { id(os, p.id); }
 static void bbVar(std::ostream &os, const BasicBlockVar &b) { id(os, b.id); }
 
@@ -347,12 +349,14 @@ void rule(std::ostream &os, const Rule &r) {
 
 } // namespace ast::print
 
-std::ostream &operator<<(std::ostream &os, const ast::Rule &r) {
+namespace ast {
+std::ostream &operator<<(std::ostream &os, const Rule &r) {
   ast::print::rule(os, r);
   return os;
 }
 
-std::ostream &operator<<(std::ostream &os, const ast::Id &id) {
+std::ostream &operator<<(std::ostream &os, const Id &id) {
   ast::print::id(os, id);
   return os;
 }
+} // namespace ast

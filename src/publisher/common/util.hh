@@ -54,3 +54,9 @@ Alt *get_if_force(std::variant<Alts...> *variant) {
 
   throw std::runtime_error(msg);
 };
+
+template <typename... Ts>
+std::ostream &printVariant(std::ostream &os, const std::variant<Ts...> &var) {
+  std::visit([&os](const auto &val) { os << val; }, var);
+  return os;
+}

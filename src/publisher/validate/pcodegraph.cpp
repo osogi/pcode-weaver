@@ -392,7 +392,7 @@ PcodeGraph::addBBPattern(const ast::BasicBlockPattern &bbp) {
             const ast::BasicBlockDominatedBy &bbdb = *b;
             const ast::BasicBlockVar &first = addBBPattern(bbdb.bbp);
             const ast::BasicBlockVar &second = bbdb.bb;
-            bbUserConditions.push_back(ConditionBBDominate(first, second));
+            bbUserConditions.push_back(CondBBDominate(first, second));
             return second;
           }
       },

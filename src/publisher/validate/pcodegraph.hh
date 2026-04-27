@@ -3,8 +3,6 @@
 #include "parse/ast.hh"
 #include "parse/context.hh"
 
-#include "validate/conditions.hh"
-
 namespace graph {
 class OpGraphNode; // forward decl
 using GraphPnode = OpGraphNode;
@@ -82,6 +80,23 @@ struct OpGraphNode {
 
 using GraphNode = std::variant<GraphVarnode, GraphPnode>;
 
+// a <= b
+class CondBBDominate {
+private:
+  ast::BasicBlockVar a;
+  ast::BasicBlockVar b;
+
+public:
+  CondBBDominate(
+      const ast::BasicBlockVar &first, const ast::BasicBlockVar &second
+  )
+      : a(first), b(second) {};
+
+  std::string toString() const {
+    return a.id.getName() + " <= " + b.id.getName();
+  }
+};
+
 class PcodeGraph {
 private:
   GraphVarnode *uniqAddToNodes(const GraphVarnode &gvn);
@@ -123,7 +138,7 @@ private:
   // store guaranteed OpGraphNode
   std::unordered_map<ast::Id, GraphPnode *> pnodes;
 
-  std::vector<ConditionBBDominate> bbUserConditions;
+  std::vector<CondBBDominate> bbUserConditions;
 
   Context &cntx;
 };

@@ -1,79 +1,44 @@
 #include "validate/solvers.hh"
+#include "parse/ast_print.hh"
 
 namespace solvers {
 
-bool EqualitySolver::unite(const Term &x, const Term &y) {
-  Term root_x = find(x);
-  Term root_y = find(y);
+Errorable<void> SizeSolver::unite(const SizeTerm &x, const SizeTerm &y) {
+  SizeTerm root_x = find(x);
+  SizeTerm root_y = find(y);
 
   // Already in same set
   if (root_x == root_y) {
-    return true;
+    return {};
   }
 
-  if (std::holds_alternative<Value>(root_x) &&
-      std::holds_alternative<Value>(root_y)) {
-    return std::get<Value>(root_x) == std::get<Value>(root_y);
+  specvalues::ConcreateSize *cs_x_ptr =
+      std::get_if<specvalues::ConcreateSize>(std::get_if<SizeValue>(&root_x));
+  specvalues::ConcreateSize *cs_y_ptr =
+      std::get_if<specvalues::ConcreateSize>(std::get_if<SizeValue>(&root_y));
+
+  if (cs_x_ptr != nullptr && cs_y_ptr != nullptr) {
+    if (*cs_x_ptr != *cs_y_ptr) {
+      std::ostringstream s;
+      s << "Can't unite " << *cs_x_ptr << " and " << *cs_y_ptr;
+      return err(s.str());
+    }
   } else {
     if (root_x < root_y) {
       this->parent[root_y] = root_x;
     } else {
       this->parent[root_x] = root_y;
     }
-    return true;
   }
+  return {};
 }
 
-Term EqualitySolver::find(const Term &x) {
-  // Initialize if not exists
-  if (parent.find(x) == parent.end()) {
-    parent[x] = x;
-  }
-
-  // Path compression
-  if (parent[x] != x) {
-    parent[x] = find(parent[x]);
-  }
-
-  return parent[x];
-}
-
-std::optional<Term> EqualitySolver::findopt(const Term &x) {
-  if (parent.find(x) == parent.end()) {
-    return std::nullopt;
-  } else {
-    return find(x);
-  }
-}
-
-// Add equation: term1 = term2
-Errorable<bool>
-EqualitySolver::addEquation(const Term &left, const Term &right) {
-  // if already equal return false
-  if (isEqual(left, right)) {
-    return false;
-  } else {
-    // if there isn't coflicts return true
-    if (unite(left, right)) {
-      return true;
-    } else {
-      std::ostringstream s;
-      s << "Can't unite " << left << " and " << right;
-      return err(s.str());
-    }
-  }
-}
-
-bool EqualitySolver::isEqual(const Term &x, const Term &y) {
-  return find(x) == find(y);
-}
-
-void PartialOrderSolver::rebuild() {
+void BBSolver::rebuild() {
   if (!dirty)
     return;
 
   // 1. Collect all IDs mentioned
-  std::unordered_set<Id> nodes;
+  std::unordered_set<BBTerm> nodes;
   for (auto &[a, b] : inequalities) {
     nodes.insert(a);
     nodes.insert(b);
@@ -81,63 +46,49 @@ void PartialOrderSolver::rebuild() {
 
   // 2. Build SCCs (Kosaraju)
   // > Maybe latter will be better change it to some incremental version
-  std::unordered_map<Id, std::vector<Id>> adj;
+  std::unordered_map<BBTerm, std::vector<BBTerm>> adj;
   for (auto &[a, b] : inequalities)
     adj[a].push_back(b);
 
-  std::unordered_map<Id, bool> visited;
-  std::vector<Id> order;
-  std::function<void(Id)> dfs1 = [&](Id u) {
+  std::unordered_map<BBTerm, bool> visited;
+  std::vector<BBTerm> order;
+  std::function<void(BBTerm)> dfs1 = [&](BBTerm u) {
     visited[u] = true;
-    for (Id v : adj[u])
+    for (BBTerm v : adj[u])
       if (!visited[v])
         dfs1(v);
     order.push_back(u);
   };
-  for (Id u : nodes)
+  for (BBTerm u : nodes)
     if (!visited[u])
       dfs1(u);
 
-  std::unordered_map<Id, std::vector<Id>> rev_adj;
+  std::unordered_map<BBTerm, std::vector<BBTerm>> rev_adj;
   for (auto &[a, b] : inequalities)
     rev_adj[b].push_back(a);
 
   std::unordered_map<Id, Id> scc_root;
   std::unordered_map<Id, std::vector<Id>> scc_members;
 
-  std::function<void(Id, Id)> dfs2 = [&](Id u, Id root) {
-    scc_root[u] = root;
-    scc_members[root].push_back(u);
-    for (Id v : rev_adj[u])
-      if (scc_root.find(v) == scc_root.end())
+  parent.clear();
+  std::function<void(BBTerm, BBTerm)> dfs2 = [&](BBTerm u, BBTerm root) {
+    EqualitySolver::addEquation(u, root);
+    for (BBTerm v : rev_adj[u])
+      if (!EqualitySolver::contains(v))
         dfs2(v, root);
   };
 
   std::reverse(order.begin(), order.end());
-  for (Id u : order) {
-    if (scc_root.find(u) == scc_root.end())
+  for (BBTerm u : order) {
+    if (!EqualitySolver::contains(u))
       dfs2(u, u);
-  }
-
-  // 3. Choose smallest ID in each SCC as the representative
-  std::unordered_map<Id, Id> scc_min; // old root -> min ID
-  for (auto &[root, members] : scc_members) {
-    Id min_id = *std::min_element(members.begin(), members.end());
-    scc_min[root] = min_id;
-  }
-
-  // 4. Set union-find parent to the min representative
-  parent.clear();
-  for (auto &[id, root] : scc_root) {
-    parent[id] =
-        scc_min[root]; // all IDs in the same SCC point to the same min ID
   }
 
   // 5. Build DAG of representatives (using min IDs)
   dag.clear();
   for (auto &[a, b] : inequalities) {
-    Id ra = find(a); // returns the min representative
-    Id rb = find(b);
+    BBTerm ra = EqualitySolver::find(a); // returns the min representative
+    BBTerm rb = EqualitySolver::find(b);
     if (ra != rb) {
       auto &vec = dag[ra];
       if (std::find(vec.begin(), vec.end(), rb) == vec.end())
@@ -148,34 +99,16 @@ void PartialOrderSolver::rebuild() {
   dirty = false;
 }
 
-Id PartialOrderSolver::find(Id x) {
-  if (parent.find(x) == parent.end()) {
-    parent[x] = x; // isolated node is its own smallest rep
-  }
-  if (parent[x] != x) {
-    parent[x] = find(parent[x]);
-  }
-  return parent[x];
-}
-
-std::optional<Term> PartialOrderSolver::findopt(const Id &x) {
-  if (parent.find(x) == parent.end()) {
-    return std::nullopt;
-  } else {
-    return find(x);
-  }
-}
-
-bool PartialOrderSolver::reachable(Id from, Id to) {
-  std::unordered_set<Id> visited;
-  std::function<bool(Id)> dfs = [&](Id u) {
+bool BBSolver::reachable(BBTerm from, BBTerm to) {
+  std::unordered_set<BBTerm> visited;
+  std::function<bool(BBTerm)> dfs = [&](BBTerm u) {
     if (u == to)
       return true;
     visited.insert(u);
     auto it = dag.find(u);
     if (it == dag.end())
       return false;
-    for (Id v : it->second) {
+    for (BBTerm v : it->second) {
       if (!visited.count(v) && dfs(v))
         return true;
     }
@@ -184,7 +117,7 @@ bool PartialOrderSolver::reachable(Id from, Id to) {
   return dfs(from);
 }
 
-bool PartialOrderSolver::addLessOrEqual(Id a, Id b) {
+bool BBSolver::addLessOrEqual(BBTerm a, BBTerm b) {
   if (isLessOrEqual(a, b))
     return false;
   inequalities.emplace_back(a, b);
@@ -192,29 +125,56 @@ bool PartialOrderSolver::addLessOrEqual(Id a, Id b) {
   return true;
 }
 
-bool PartialOrderSolver::isEqual(Id a, Id b) {
-  rebuild();
-  return find(a) == find(b);
-}
-
-bool PartialOrderSolver::isLessOrEqual(Id a, Id b) {
-  rebuild();
-  Id ra = find(a);
-  Id rb = find(b);
+bool BBSolver::isLessOrEqual(BBTerm a, BBTerm b) {
+  BBTerm ra = find(a);
+  BBTerm rb = find(b);
   if (ra == rb)
     return true;
+  rebuild();
   return reachable(ra, rb);
 }
 
-} // namespace solvers
+Errorable<void> BBSolver::unite(const BBTerm &x, const BBTerm &y) {
+  BBTerm root_x = find(x);
+  BBTerm root_y = find(y);
 
-std::ostream &operator<<(std::ostream &os, const solvers::Term &term) {
-  std::visit(
-      util::overloaded{
-          [&](auto &t) { os << t; },
-      },
-      term
-  );
+  // Already in same set
+  if (root_x == root_y) {
+    return {};
+  }
 
-  return os;
+  if (root_x < root_y) {
+    this->parent[root_y] = root_x;
+  } else {
+    this->parent[root_x] = root_y;
+  }
+
+  return {};
 }
+
+BBTerm BBSolver::find(const BBTerm &x) {
+  if (!EqualitySolver::contains(x)) {
+    dirty = true;
+  }
+  return EqualitySolver::find(x);
+}
+
+bool BBSolver::isEqual(const BBTerm &x, const BBTerm &y) {
+  rebuild();
+  return EqualitySolver::isEqual(x, y);
+}
+
+bool BBSolver::contains(const BBTerm &x) {
+  rebuild();
+  return EqualitySolver::contains(x);
+}
+
+std::ostream &operator<<(std::ostream &os, const SizeTerm &term) {
+  return printVariant(os, term);
+}
+
+std::ostream &operator<<(std::ostream &os, const BBTerm &term) {
+  return printVariant(os, term);
+}
+
+} // namespace solvers

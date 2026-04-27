@@ -1,5 +1,8 @@
 validator_src = [
   'solvers.cpp',
+  'specvalues.cpp',
+  # 'specvalues.cpp',
+
 ]
 
 validator_lib = static_library(
