@@ -1,5 +1,3 @@
-#pragma once
-
 #include "validate/pcodegraph.hh"
 #include "pcodegraph.hh"
 
@@ -75,9 +73,6 @@ GraphVarnode *PcodeGraph::findOrCreateVarnode(const ast::Id &id) {
     return it->second;
   } else {
     VarGraphNode vn(id);
-    vn.systemType.size = cntx.sizeVarFactory.createId();
-    vn.systemType.declarationBB =
-        ast::BasicBlockVar{cntx.basicBlockVarFactory.createId()};
 
     varnodes[id] = uniqAddToNodes(vn);
     return varnodes[id];
@@ -91,7 +86,6 @@ GraphPnode *PcodeGraph::findOrCreatePnode(const ast::Id &id) {
     return it->second;
   } else {
     OpGraphNode pn(id);
-    pn.systemBb = ast::BasicBlockVar{cntx.basicBlockVarFactory.createId()};
 
     pnodes[id] = uniqAddToNodes(pn);
     return pnodes[id];
@@ -100,15 +94,15 @@ GraphPnode *PcodeGraph::findOrCreatePnode(const ast::Id &id) {
 Errorable<void> PcodeGraph::validateVarnode(const GraphVarnode &gvn) {
   return std::visit(
       util::overloaded{
-          [&](const VarGraphNode &var) {
+          [&](const VarGraphNode &var) -> Errorable<void> {
             if (var.edges.def.has_value() && var.edges.def.value() == nullptr) {
               return err(
                   "Varnode " + var.id.getName() + " hasn't defined pnode"
               );
             }
-            return;
+            return {};
           },
-          [&](const ConstGraphNode &cnst) {
+          [&](const ConstGraphNode &cnst) -> Errorable<void> {
             if (cnst.edges.def.has_value() &&
                 cnst.edges.def.value() != nullptr) {
               return err(
@@ -116,9 +110,9 @@ Errorable<void> PcodeGraph::validateVarnode(const GraphVarnode &gvn) {
                   " defined by pnode " + cnst.edges.def.value()->id.getName()
               );
             }
-            return;
+            return {};
           },
-          [&](const EmptyGraphNode &cnst) { return; },
+          [&](const EmptyGraphNode &cnst) -> Errorable<void> { return {}; },
       },
       gvn
   );
@@ -189,7 +183,7 @@ Errorable<void> PcodeGraph::validatePnodeInSpecial(
     }
   }
 
-  return;
+  return {};
 }
 
 Errorable<void> PcodeGraph::validatePnodeInArray(
@@ -213,6 +207,7 @@ Errorable<void> PcodeGraph::validatePnodeInArray(
       }
     }
   }
+  return {};
 }
 
 Errorable<void> PcodeGraph::validatePnodeOut(
@@ -234,7 +229,7 @@ Errorable<void> PcodeGraph::validatePnodeOut(
       }
     }
   }
-  return;
+  return {};
 }
 
 Errorable<void> PcodeGraph::validatePnode(const GraphPnode &gpn) {
@@ -255,6 +250,7 @@ Errorable<void> PcodeGraph::validatePnode(const GraphPnode &gpn) {
       return res;
     }
   }
+  return {};
 }
 
 // Public
@@ -387,8 +383,11 @@ const ast::BasicBlockVar &
 PcodeGraph::addBBPattern(const ast::BasicBlockPattern &bbp) {
   return std::visit(
       util::overloaded{
-          [this](const ast::BasicBlockVar &bbv) { return bbv; },
-          [this](const ast::Box<ast::BasicBlockDominatedBy> &b) {
+          [this](const ast::BasicBlockVar &bbv) -> const ast::BasicBlockVar & {
+            return bbv;
+          },
+          [this](const ast::Box<ast::BasicBlockDominatedBy> &b)
+              -> const ast::BasicBlockVar & {
             const ast::BasicBlockDominatedBy &bbdb = *b;
             const ast::BasicBlockVar &first = addBBPattern(bbdb.bbp);
             const ast::BasicBlockVar &second = bbdb.bb;
@@ -416,6 +415,7 @@ Errorable<void> PcodeGraph::validate() {
       return res;
     }
   }
+  return {};
 }
 
 void PcodeGraph::updateMaxArgForPnodes(bool actionStep) {

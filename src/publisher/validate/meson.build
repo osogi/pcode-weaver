@@ -1,8 +1,7 @@
 validator_src = [
   'solvers.cpp',
   'specvalues.cpp',
-  # 'specvalues.cpp',
-
+  'pcodegraph.cpp',
 ]
 
 validator_lib = static_library(

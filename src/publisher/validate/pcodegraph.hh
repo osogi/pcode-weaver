@@ -19,7 +19,6 @@ struct VarnodeEdges {
 struct VarGraphNode {
   const ast::Id &id;
 
-  ast::VarnodeType systemType;
   std::vector<ast::VarnodeType> userTypes;
 
   VarnodeEdges edges;
@@ -69,7 +68,6 @@ struct OpGraphNode {
   const ast::Id &id;
   std::optional<ast::OpType> opTp;
 
-  ast::BasicBlockVar systemBb;
   std::vector<ast::BasicBlockVar> userBbs;
 
   PnodeEdges edges;
@@ -139,7 +137,5 @@ private:
   std::unordered_map<ast::Id, GraphPnode *> pnodes;
 
   std::vector<CondBBDominate> bbUserConditions;
-
-  Context &cntx;
 };
 }; // namespace graph
