@@ -33,107 +33,6 @@ Errorable<void> SizeSolver::unite(const SizeTerm &x, const SizeTerm &y) {
   return {};
 }
 
-void BBSolver::rebuild() {
-  if (!dirty)
-    return;
-
-  // 1. Collect all IDs mentioned
-  std::unordered_set<BBTerm> nodes;
-  for (auto &[a, b] : inequalities) {
-    nodes.insert(a);
-    nodes.insert(b);
-  }
-
-  // 2. Build SCCs (Kosaraju)
-  // > Maybe latter will be better change it to some incremental version
-  std::unordered_map<BBTerm, std::vector<BBTerm>> adj;
-  for (auto &[a, b] : inequalities)
-    adj[a].push_back(b);
-
-  std::unordered_map<BBTerm, bool> visited;
-  std::vector<BBTerm> order;
-  std::function<void(BBTerm)> dfs1 = [&](BBTerm u) {
-    visited[u] = true;
-    for (BBTerm v : adj[u])
-      if (!visited[v])
-        dfs1(v);
-    order.push_back(u);
-  };
-  for (BBTerm u : nodes)
-    if (!visited[u])
-      dfs1(u);
-
-  std::unordered_map<BBTerm, std::vector<BBTerm>> rev_adj;
-  for (auto &[a, b] : inequalities)
-    rev_adj[b].push_back(a);
-
-  std::unordered_map<Id, Id> scc_root;
-  std::unordered_map<Id, std::vector<Id>> scc_members;
-
-  parent.clear();
-  std::function<void(BBTerm, BBTerm)> dfs2 = [&](BBTerm u, BBTerm root) {
-    EqualitySolver::addEquation(u, root);
-    for (BBTerm v : rev_adj[u])
-      if (!EqualitySolver::contains(v))
-        dfs2(v, root);
-  };
-
-  std::reverse(order.begin(), order.end());
-  for (BBTerm u : order) {
-    if (!EqualitySolver::contains(u))
-      dfs2(u, u);
-  }
-
-  // 5. Build DAG of representatives (using min IDs)
-  dag.clear();
-  for (auto &[a, b] : inequalities) {
-    BBTerm ra = EqualitySolver::find(a); // returns the min representative
-    BBTerm rb = EqualitySolver::find(b);
-    if (ra != rb) {
-      auto &vec = dag[ra];
-      if (std::find(vec.begin(), vec.end(), rb) == vec.end())
-        vec.push_back(rb);
-    }
-  }
-
-  dirty = false;
-}
-
-bool BBSolver::reachable(BBTerm from, BBTerm to) {
-  std::unordered_set<BBTerm> visited;
-  std::function<bool(BBTerm)> dfs = [&](BBTerm u) {
-    if (u == to)
-      return true;
-    visited.insert(u);
-    auto it = dag.find(u);
-    if (it == dag.end())
-      return false;
-    for (BBTerm v : it->second) {
-      if (!visited.count(v) && dfs(v))
-        return true;
-    }
-    return false;
-  };
-  return dfs(from);
-}
-
-bool BBSolver::addLessOrEqual(BBTerm a, BBTerm b) {
-  if (isLessOrEqual(a, b))
-    return false;
-  inequalities.emplace_back(a, b);
-  dirty = true;
-  return true;
-}
-
-bool BBSolver::isLessOrEqual(BBTerm a, BBTerm b) {
-  BBTerm ra = find(a);
-  BBTerm rb = find(b);
-  if (ra == rb)
-    return true;
-  rebuild();
-  return reachable(ra, rb);
-}
-
 Errorable<void> BBSolver::unite(const BBTerm &x, const BBTerm &y) {
   BBTerm root_x = find(x);
   BBTerm root_y = find(y);
@@ -143,30 +42,181 @@ Errorable<void> BBSolver::unite(const BBTerm &x, const BBTerm &y) {
     return {};
   }
 
-  if (root_x < root_y) {
-    this->parent[root_y] = root_x;
-  } else {
-    this->parent[root_x] = root_y;
+  BBTerm newRep = root_x;
+  BBTerm oldRep = root_y;
+  if (root_y < root_x) {
+    newRep = root_y;
+    oldRep = root_x;
   }
+
+  parent[oldRep] = newRep;
+  mergeEdgesOnUnion(oldRep, newRep);
 
   return {};
 }
+void BBSolver::mergeEdgesOnUnion(const BBTerm &oldRep, const BBTerm &newRep) {
+  if (oldRep == newRep)
+    return;
 
-BBTerm BBSolver::find(const BBTerm &x) {
-  if (!EqualitySolver::contains(x)) {
-    dirty = true;
+  // Merge lessEdges[oldRep] into lessEdges[newRep]
+  if (lessEdges.contains(oldRep)) {
+    for (auto &target : lessEdges[oldRep]) {
+      if (target != newRep) {
+        lessEdges[newRep].insert(target);
+      }
+      // fix reverse edges
+      greaterEdges[target].erase(oldRep);
+      if (target != newRep) {
+        greaterEdges[target].insert(newRep);
+      }
+    }
+    lessEdges.erase(oldRep);
   }
-  return EqualitySolver::find(x);
+
+  // Merge greaterEdges[oldRep] into greaterEdges[newRep]
+  if (greaterEdges.contains(oldRep)) {
+    for (auto &source : greaterEdges[oldRep]) {
+      if (source != newRep) {
+        greaterEdges[newRep].insert(source);
+      }
+      // fix forward edges
+      lessEdges[source].erase(oldRep);
+      if (source != newRep) {
+        lessEdges[source].insert(newRep);
+      }
+    }
+    greaterEdges.erase(oldRep);
+  }
+
+  // Remove self-loops
+  lessEdges[newRep].erase(newRep);
+  greaterEdges[newRep].erase(newRep);
 }
 
-bool BBSolver::isEqual(const BBTerm &x, const BBTerm &y) {
-  rebuild();
-  return EqualitySolver::isEqual(x, y);
+// BFS/DFS reachability in the DAG (following lessEdges)
+// Returns true if `from` can reach `to` via ≤ edges
+bool BBSolver::canReach(const BBTerm &from, const BBTerm &to) {
+  if (from == to)
+    return true;
+
+  std::unordered_set<BBTerm> visited;
+  std::queue<BBTerm> queue;
+  queue.push(from);
+  visited.insert(from);
+
+  while (!queue.empty()) {
+    auto curr = queue.front();
+    queue.pop();
+
+    if (!lessEdges.contains(curr))
+      continue;
+
+    for (const auto &next : lessEdges.at(curr)) {
+      BBTerm repNext = find(next); // normalize to rep
+      if (repNext == to)
+        return true;
+      if (!visited.contains(repNext)) {
+        visited.insert(repNext);
+        queue.push(repNext);
+      }
+    }
+  }
+  return false;
 }
 
-bool BBSolver::contains(const BBTerm &x) {
-  rebuild();
-  return EqualitySolver::contains(x);
+// Collapses all nodes 'v' such that (source <= v <= target)
+void BBSolver::collapsePath(const BBTerm &source, const BBTerm &target) {
+  BBTerm rTarget = find(target);
+  BBTerm rSource = find(source);
+
+  std::vector<BBTerm> cycleNodes;
+  std::queue<BBTerm> q;
+  std::unordered_set<BBTerm> visited;
+
+  q.push(rSource);
+  visited.insert(rSource);
+
+  while (!q.empty()) {
+    BBTerm curr = q.front();
+    q.pop();
+
+    // If this node can reach the target, it's part of the cycle/path
+    if (canReach(curr, rTarget)) {
+      cycleNodes.push_back(curr);
+    }
+
+    if (lessEdges.contains(curr)) {
+      for (auto &next : lessEdges.at(curr)) {
+        BBTerm rNext = find(next);
+        if (!visited.contains(rNext)) {
+          visited.insert(rNext);
+          q.push(rNext);
+        }
+      }
+    }
+  }
+
+  for (BBTerm node : cycleNodes) {
+    unite(rTarget, node);
+    rTarget = find(rTarget);
+  }
+}
+
+/// @brief Add inequality: a ≤ b
+/// @return true if something changed, false if already known
+Errorable<bool> BBSolver::addLessOrEqual(BBTerm a, BBTerm b) {
+  BBTerm ra = find(a);
+  BBTerm rb = find(b);
+
+  if (ra == rb || canReach(ra, rb))
+    return false;
+
+  if (canReach(rb, ra)) {
+    // Cycle detected! Collapse everything between rb and ra
+    collapsePath(rb, ra);
+    return true;
+  }
+
+  // Normal case
+  lessEdges[ra].insert(rb);
+  greaterEdges[rb].insert(ra);
+  return true;
+}
+
+/// @brief Check if a ≤ b (directly or transitively via equalities)
+bool BBSolver::isLessOrEqual(BBTerm a, BBTerm b) {
+  BBTerm ra = find(a);
+  BBTerm rb = find(b);
+
+  // Equal terms satisfy ≤ (reflexivity)
+  if (ra == rb)
+    return true;
+
+  // Check reachability in DAG
+  return canReach(ra, rb);
+}
+
+Errorable<bool> BBSolver::addEquation(const BBTerm &left, const BBTerm &right) {
+  BBTerm rl = find(left);
+  BBTerm rr = find(right);
+
+  if (rl == rr)
+    return false;
+
+  // 1. If there's a path rl -> ... -> rr, collapse it
+  if (canReach(rl, rr)) {
+    // This is exactly the cycle logic from addLessOrEqual!
+    collapsePath(rl, rr); // Collapses everything on path from rl to rr
+  }
+  // 2. If there's a path rr -> ... -> rl, collapse it
+  else if (canReach(rr, rl)) {
+    collapsePath(rr, rl); // Collapses everything on path from rr to rl
+  }
+
+  // 3. Finally, ensure the two actual endpoints are unified
+  unite(rl, rr);
+
+  return true;
 }
 
 std::ostream &operator<<(std::ostream &os, const SizeTerm &term) {

@@ -7,6 +7,7 @@
 #include <functional>
 #include <iostream>
 #include <optional>
+#include <queue>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -86,25 +87,34 @@ using BBTerm = std::variant<BBValue, Id>;
 
 class BBSolver : public EqualitySolver<BBTerm> {
 protected:
-  std::vector<std::pair<BBTerm, BBTerm>> inequalities;
-  std::unordered_map<BBTerm, std::vector<BBTerm>> dag;
-  bool dirty = true;
+  // Adjacency list for the "less-or-equal" DAG
+  // edges[a] = {b, c, ...} means a ≤ b, a ≤ c, ...
+  // stored in terms of REPRESENTATIVES (find() results)
+  std::unordered_map<BBTerm, std::unordered_set<BBTerm>> lessEdges;
+  // reverse edges for upward traversal: b >= a
+  std::unordered_map<BBTerm, std::unordered_set<BBTerm>> greaterEdges;
 
-  void rebuild();
-
-  bool reachable(BBTerm from, BBTerm to);
   Errorable<void> unite(const BBTerm &x, const BBTerm &y) override;
 
+  // Call this after two representatives rx, ry are merged into newRep
+  void mergeEdgesOnUnion(const BBTerm &oldRep, const BBTerm &newRep);
+
+  // BFS/DFS reachability in the DAG (following lessEdges)
+  // Returns true if `from` can reach `to` via ≤ edges
+  bool canReach(const BBTerm &from, const BBTerm &to);
+
+  void collapsePath(const BBTerm &source, const BBTerm &target);
+
 public:
-  bool addLessOrEqual(BBTerm a, BBTerm b);
+  /// @brief Add inequality: a ≤ b
+  /// @return true if something changed, false if already known
+  Errorable<bool> addLessOrEqual(BBTerm a, BBTerm b);
+
+  /// @brief Check if a ≤ b (directly or transitively via equalities)
   bool isLessOrEqual(BBTerm a, BBTerm b);
 
-  BBTerm find(const BBTerm &x);
-  bool isEqual(const BBTerm &x, const BBTerm &y);
-  bool contains(const BBTerm &x);
-  ;
+  Errorable<bool> addEquation(const BBTerm &left, const BBTerm &right);
 };
-
 std::ostream &operator<<(std::ostream &os, const SizeTerm &term);
 std::ostream &operator<<(std::ostream &os, const BBTerm &term);
 
