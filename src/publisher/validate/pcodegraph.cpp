@@ -399,6 +399,44 @@ PcodeGraph::addBBPattern(const ast::BasicBlockPattern &bbp) {
   );
 }
 
+Errorable<void> PcodeGraph::addPattern(const ast::RulePattern &p) {
+  return std::visit(
+      util::overloaded{
+          [&](const ast::VarnodePattern &x) -> Errorable<void> {
+            auto res = addVarnodePattern(x);
+            if (!res.has_value()) {
+              return std::unexpected(res.error());
+            } else {
+              return {};
+            }
+          },
+          [&](const ast::PnodePattern &x) -> Errorable<void> {
+            auto res = addPnodePattern(x);
+            if (!res.has_value()) {
+              return std::unexpected(res.error());
+            } else {
+              return {};
+            }
+          },
+          [&](const ast::BasicBlockPattern &x) -> Errorable<void> {
+            addBBPattern(x);
+            return {};
+          }
+      },
+      p
+  );
+}
+Errorable<void>
+PcodeGraph::addPatterns(const std::vector<ast::RulePattern> &ps) {
+  for (const auto &p : ps) {
+    auto res = addPattern(p);
+    if (!res.has_value()) {
+      return res;
+    }
+  }
+  return {};
+}
+
 Errorable<void> PcodeGraph::validate() {
 
   Errorable<void> res;

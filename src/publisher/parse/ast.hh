@@ -158,6 +158,8 @@ using OutVarnodeCondition = std::variant<
     OutVarnodeConditionDefault, OutVarnodeConditionNoOutOr,
     OutVarnodeConditionNoOut>;
 
+const Size *getSizeOutCond(const OutVarnodeCondition &cond);
+
 struct OpTypeScheme {
   InVarnodeConditions inVarnodeConds;
   OutVarnodeCondition outVarnodeCond;

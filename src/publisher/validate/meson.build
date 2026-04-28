@@ -2,6 +2,7 @@ validator_src = [
   'solvers.cpp',
   'specvalues.cpp',
   'pcodegraph.cpp',
+  'inferencer.cpp'
 ]
 
 validator_lib = static_library(

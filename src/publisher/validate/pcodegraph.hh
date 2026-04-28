@@ -3,6 +3,10 @@
 #include "parse/ast.hh"
 #include "parse/context.hh"
 
+namespace infer {
+class Inferencer; // forward decl
+}
+
 namespace graph {
 class OpGraphNode; // forward decl
 using GraphPnode = OpGraphNode;
@@ -96,7 +100,9 @@ public:
 };
 
 class PcodeGraph {
-private:
+  friend class infer::Inferencer;
+
+protected:
   GraphVarnode *uniqAddToNodes(const GraphVarnode &gvn);
   GraphPnode *uniqAddToNodes(const OpGraphNode &pn);
 
@@ -118,16 +124,21 @@ private:
   Errorable<void> validatePnode(const GraphPnode &gpn);
 
 public:
+  PcodeGraph() = default;
+
   GraphVarnode *addVarnodeTerm(const ast::VarnodeTerm &vt);
   Errorable<GraphPnode *> addPnodeTerm(const ast::PnodeTerm &pt);
 
   Errorable<GraphVarnode *> addVarnodePattern(const ast::VarnodePattern &vp);
   Errorable<GraphPnode *> addPnodePattern(const ast::PnodePattern &pp);
   const ast::BasicBlockVar &addBBPattern(const ast::BasicBlockPattern &bbp);
+  Errorable<void> addPattern(const ast::RulePattern &p);
+  Errorable<void> addPatterns(const std::vector<ast::RulePattern> &ps);
+
   Errorable<void> validate();
   void updateMaxArgForPnodes(bool patternStep);
 
-private:
+protected:
   std::vector<std::unique_ptr<GraphNode>> nodes;
 
   // store guaranteed VarGraphNode

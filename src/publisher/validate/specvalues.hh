@@ -67,11 +67,6 @@ struct BBOfPnode : DefinedByIdNode {
 
 using SpecValueBB = std::variant<BBOfVarnode, BBOfPnode>;
 
-class SpecCondition {
-public:
-  virtual const std::string &toString() const = 0;
-};
-
 std::ostream &operator<<(std::ostream &os, const DefinedByIdNode &val);
 std::ostream &operator<<(std::ostream &os, const ConcreateSize &val);
 std::ostream &operator<<(std::ostream &os, const SpecValueSize &val);
