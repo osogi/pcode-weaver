@@ -138,10 +138,8 @@ public:
       : cntx(_context), pgraph(_graph), sizeSolver(_sizeSolver),
         bbSolver(_bbSolver) {}
 
-  Errorable<std::unique_ptr<Inferencer::CondVectType>>
-  inference(bool returnNewConds = false);
+  Errorable<void> inference(CondVectType *conds = nullptr);
 
-  Errorable<std::unique_ptr<Inferencer::CondVectType>>
-  inferenceUserConds(bool returnNewConds = false);
+  Errorable<void> inferenceUserConds(CondVectType *conds = nullptr);
 };
 } // namespace infer

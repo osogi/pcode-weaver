@@ -65,7 +65,7 @@ struct BBOfPnode : DefinedByIdNode {
   static inline const std::string sSpecName = "bb_of_op";
 };
 
-using SpecValueBB = std::variant<BBOfVarnode, BBOfPnode>;
+using SpecValueBB = std::variant<BBOfPnode, BBOfVarnode>;
 
 std::ostream &operator<<(std::ostream &os, const DefinedByIdNode &val);
 std::ostream &operator<<(std::ostream &os, const ConcreateSize &val);

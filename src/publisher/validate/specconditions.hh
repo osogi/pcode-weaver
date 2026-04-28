@@ -19,4 +19,11 @@ struct BBDominate {
 
 using SpecCondition = std::variant<SizeEqual, BBEqual, BBDominate>;
 
+std::ostream &operator<<(std::ostream &os, const SizeEqual &val);
+std::ostream &operator<<(std::ostream &os, const BBEqual &val);
+std::ostream &operator<<(std::ostream &os, const BBDominate &val);
+std::ostream &operator<<(std::ostream &os, const SpecCondition &val);
+
 } // namespace speccond
+
+using speccond::operator<<;

@@ -65,4 +65,6 @@ Errorable<ast::OpType> Driver::getOpTypeByToken(OpTypeToken token) {
 
 void Driver::setParsedRule(ast::Rule &&rule) { parsedRule = std::move(rule); };
 
+Context &Driver::getContext() { return cntx; };
+
 } // namespace yy

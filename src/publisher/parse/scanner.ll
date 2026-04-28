@@ -73,7 +73,7 @@ INT\_SUB { return yy::Parser::make_INT_SUB(driver.location());}
 [vV][a-zA-Z0-9_]+  { return yy::Parser::make_VARNODE_IDENTIFIER(yytext, driver.location()); }
 [bB][a-zA-Z0-9_]+  { return yy::Parser::make_BASIC_BLOCK_IDENTIFIER(yytext, driver.location()); }
 
-[a-zA-Z][[a-zA-Z0-9_]+] { return yy::Parser::make_IDENTIFIER(yytext, driver.location()); }
+[a-zA-Z][a-zA-Z0-9_]* { return yy::Parser::make_IDENTIFIER(yytext, driver.location()); }
 
 [#]\-?[0-9]+          { SCAN_NUMBER(yytext + 1,  yy::Parser::make_CONST); }
 [#]\-?0x[0-9a-fA-F]+  { SCAN_NUMBER(yytext + 1,  yy::Parser::make_CONST); }

@@ -88,36 +88,34 @@ Inferencer::inferencePnode(const graph::GraphPnode &gp, CondVectType *conds) {
   return {};
 }
 
-Errorable<std::unique_ptr<Inferencer::CondVectType>>
-Inferencer::inference(bool returnNewConds) {
-  CondVectType *conds = nullptr;
-  std::unique_ptr<CondVectType> vecPtr = std::make_unique<CondVectType>(0);
-
-  if (returnNewConds) {
-    conds = vecPtr.get();
-  }
-
-  for (const auto &[_id, pnode] : pgraph.pnodes) {
-    auto res = inferencePnode(*pnode, conds);
+Errorable<void> Inferencer::inference(CondVectType *conds) {
+  for (const auto &gn : pgraph.nodes) {
+    Errorable<void> res = std::visit(
+        util::overloaded{
+            [&](const graph::GraphVarnode &gvn) {
+              return inferenceVarnode(gvn, conds);
+            },
+            [&](const graph::GraphPnode &gpn) {
+              return inferencePnode(gpn, conds);
+            }
+        },
+        *gn
+    );
     if (!res.has_value()) {
-      return std::unexpected(res.error());
+      return res;
     }
   }
-
-  for (const auto &[_id, varnode] : pgraph.varnodes) {
-    auto res = inferenceVarnode(*varnode, conds);
-    if (!res.has_value()) {
-      return std::unexpected(res.error());
-    }
-  }
-  return std::move(vecPtr);
+  return {};
 }
 
 Errorable<void> Inferencer::inferencePnodeUserConds(
     const graph::GraphPnode &gp, CondVectType *conds
 ) {
   for (const auto &userBB : gp.userBbs) {
-    auto res = addBBEqual(specvalues::BBOfPnode(gp.id), userBB.id, conds);
+
+    // don't change conditions then we add id first time
+    auto tmpConds = bbSolver.contains(userBB.id) ? conds : nullptr;
+    auto res = addBBEqual(specvalues::BBOfPnode(gp.id), userBB.id, tmpConds);
     if (!res.has_value()) {
       return res;
     }
@@ -131,13 +129,21 @@ Errorable<void> Inferencer::inferenceVarnodeUserConds(
   const graph::VarGraphNode *vg = std::get_if<graph::VarGraphNode>(&gvn);
 
   for (const auto &vt : vg->userTypes) {
-    auto res =
-        addBBEqual(specvalues::BBOfVarnode(vg->id), vt.declarationBB.id, conds);
+    // don't change conditions then we add id first time
+    auto tmpConds = bbSolver.contains(vt.declarationBB.id) ? conds : nullptr;
+    auto res = addBBEqual(
+        specvalues::BBOfVarnode(vg->id), vt.declarationBB.id, tmpConds
+    );
     if (!res.has_value()) {
       return res;
     }
 
-    res = addSizeEqualSizeAndVarnode(vt.size, &gvn, conds);
+    tmpConds = conds;
+    const ast::Id *sizeId = std::get_if<ast::Id>(&vt.size);
+    if (sizeId != nullptr && !sizeSolver.contains(*sizeId)) {
+      tmpConds = nullptr;
+    }
+    res = addSizeEqualSizeAndVarnode(vt.size, &gvn, tmpConds);
     if (!res.has_value()) {
       return res;
     }
@@ -145,29 +151,30 @@ Errorable<void> Inferencer::inferenceVarnodeUserConds(
   return {};
 }
 
-Errorable<std::unique_ptr<Inferencer::CondVectType>>
-Inferencer::inferenceUserConds(bool returnNewConds) {
-  CondVectType *conds = nullptr;
-  std::unique_ptr<CondVectType> vecPtr = std::make_unique<CondVectType>(0);
+Errorable<void> Inferencer::inferenceUserConds(CondVectType *conds) {
 
-  if (returnNewConds) {
-    conds = vecPtr.get();
-  }
-
-  for (const auto &[_id, pnode] : pgraph.pnodes) {
-    auto res = inferencePnodeUserConds(*pnode, conds);
+  for (const auto &gn : pgraph.nodes) {
+    Errorable<void> res = std::visit(
+        util::overloaded{
+            [&](const graph::GraphVarnode &gvn) {
+              return inferenceVarnodeUserConds(gvn, conds);
+            },
+            [&](const graph::GraphPnode &gpn) {
+              return inferencePnodeUserConds(gpn, conds);
+            }
+        },
+        *gn
+    );
     if (!res.has_value()) {
-      return std::unexpected(res.error());
+      return res;
     }
   }
 
-  for (const auto &[_id, varnode] : pgraph.varnodes) {
-    auto res = inferenceVarnodeUserConds(*varnode, conds);
-    if (!res.has_value()) {
-      return std::unexpected(res.error());
-    }
+  for (const auto &bbc : pgraph.bbUserConditions) {
+    addBBDominate(bbc.a.id, bbc.b.id, conds);
   }
-  return std::move(vecPtr);
+
+  return {};
 }
 
 } // namespace infer

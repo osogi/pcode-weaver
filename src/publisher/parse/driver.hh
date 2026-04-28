@@ -1,9 +1,8 @@
 #pragma once
 
 #include "parse/context.hh"
-#include "parse/scanner.hh"
 #include "parse/op_type_predefined.hh"
-
+#include "parse/scanner.hh"
 
 // generated headers
 #include "parse/parser.hh"
@@ -12,50 +11,53 @@
 
 namespace yy {
 class Driver {
-  public:
-    Driver();
+public:
+  Driver();
 
-    /**
-     * Run parser. Results are stored inside.
-     * \returns 0 on success, 1 on failure
-     */
-    int parse(const std::filesystem::path &targetFile);
+  /**
+   * Run parser. Results are stored inside.
+   * \returns 0 on success, 1 on failure
+   */
+  int parse(const std::filesystem::path &targetFile);
 
-    // Return parsed Rule
-    const ast::Rule& getParsedRule();
+  // Return parsed Rule
+  const ast::Rule &getParsedRule();
 
-    
-    friend Scanner;
-    friend Parser;
-    
-    private:
-    void switch_streams(std::istream& newIn = std::cin, std::ostream& newErr = std::cerr);
+  Context &getContext();
 
-    // location update methods
-    void locationAdvanceToken(size_t amount);
-    void locationAdvanceNewLine();
+  friend Scanner;
+  friend Parser;
 
-    // get current location
-    const yy::location& location() const;
+private:
+  void switch_streams(
+      std::istream &newIn = std::cin, std::ostream &newErr = std::cerr
+  );
 
-    // print error msg
-    void error(const std::string &message);
-    void error(const yy::location &loc, const std::string &message);
+  // location update methods
+  void locationAdvanceToken(size_t amount);
+  void locationAdvanceNewLine();
 
-    Errorable<ast::OpType>  getOpTypeByToken(OpTypeToken token);
+  // get current location
+  const yy::location &location() const;
 
-    // Set rule upon completion of parsing
-    void setParsedRule(ast::Rule &&rule);
+  // print error msg
+  void error(const std::string &message);
+  void error(const yy::location &loc, const std::string &message);
 
-    ast::Rule parsedRule;
+  Errorable<ast::OpType> getOpTypeByToken(OpTypeToken token);
 
-    Context cntx;
+  // Set rule upon completion of parsing
+  void setParsedRule(ast::Rule &&rule);
 
-    Scanner scanner;
-    Parser parser;
+  ast::Rule parsedRule;
 
-    bool meetErrorDuringParse = false;
-    std::string currentFile = "NO_SETTED";
-    std::ostream& errStream;
+  Context cntx;
+
+  Scanner scanner;
+  Parser parser;
+
+  bool meetErrorDuringParse = false;
+  std::string currentFile = "NO_SETTED";
+  std::ostream &errStream;
 };
 } // namespace yy

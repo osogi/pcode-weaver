@@ -363,7 +363,7 @@ PcodeGraph::addPnodePattern(const ast::PnodePattern &pp) {
                           "Pnode " + pn->id.getName() + " already had " +
                           toStr(pn->edges.inrefs[n]) + " as arg number " +
                           std::to_string(n) + " during adding " + toStr(vn) +
-                          "as new one"
+                          " as new one"
                       );
                     };
 
@@ -438,17 +438,14 @@ PcodeGraph::addPatterns(const std::vector<ast::RulePattern> &ps) {
 }
 
 Errorable<void> PcodeGraph::validate() {
-
-  Errorable<void> res;
-  for (auto &[_id, gpn] : pnodes) {
-    res = validatePnode(*gpn);
-    if (!res.has_value()) {
-      return res;
-    }
-  }
-
-  for (auto &[_id, gvn] : varnodes) {
-    res = validateVarnode(*gvn);
+  for (const auto &gn : nodes) {
+    Errorable<void> res = std::visit(
+        util::overloaded{
+            [this](const GraphVarnode &gvn) { return validateVarnode(gvn); },
+            [this](const GraphPnode &gpn) { return validatePnode(gpn); }
+        },
+        *gn
+    );
     if (!res.has_value()) {
       return res;
     }

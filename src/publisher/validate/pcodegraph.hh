@@ -83,12 +83,10 @@ struct OpGraphNode {
 using GraphNode = std::variant<GraphVarnode, GraphPnode>;
 
 // a <= b
-class CondBBDominate {
-private:
+struct CondBBDominate {
   ast::BasicBlockVar a;
   ast::BasicBlockVar b;
 
-public:
   CondBBDominate(
       const ast::BasicBlockVar &first, const ast::BasicBlockVar &second
   )

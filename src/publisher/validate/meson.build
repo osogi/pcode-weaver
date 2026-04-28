@@ -1,8 +1,10 @@
 validator_src = [
   'solvers.cpp',
   'specvalues.cpp',
+  'specconditions.cpp',
   'pcodegraph.cpp',
-  'inferencer.cpp'
+  'inferencer.cpp',
+  'validate_driver.cpp'
 ]
 
 validator_lib = static_library(
