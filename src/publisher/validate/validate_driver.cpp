@@ -6,6 +6,9 @@ Errorable<void> ValidateDriver::validate(const ast::Rule &rule) {
   if (!resPatGraphBuild.has_value()) {
     return err("Build Pattern Graph: " + resPatGraphBuild.error().message());
   }
+  pgraph.updateMaxArgForPnodes(true);
+  actgraph = graph::ActionPcodeGraph(rule.patterns);
+  getActgraph().updateMaxArgForPnodes(true);
 
   auto resPatGraphValidate = pgraph.validate();
   if (!resPatGraphValidate.has_value()) {
@@ -14,7 +17,7 @@ Errorable<void> ValidateDriver::validate(const ast::Rule &rule) {
     );
   }
 
-  auto resPatGraphInference = inferencer.inference();
+  auto resPatGraphInference = inferencer.inference(pgraph);
   if (!resPatGraphInference.has_value()) {
     return err(
         "Inference Pattern Graph: " + resPatGraphInference.error().message()
@@ -22,11 +25,36 @@ Errorable<void> ValidateDriver::validate(const ast::Rule &rule) {
   }
 
   auto resPatGraphInferenceUserConds =
-      inferencer.inferenceUserConds(&runtimeConditions);
+      inferencer.inferenceUserConds(pgraph, &runtimeConditions);
   if (!resPatGraphInferenceUserConds.has_value()) {
     return err(
         "Inference User Conditions Pattern Graph: " +
         resPatGraphInferenceUserConds.error().message()
+    );
+  }
+
+  // Actions
+
+  auto resActGraphBuild = getActgraph().addActions(rule.actions);
+  if (!resActGraphBuild.has_value()) {
+    return err(
+        "Build Action Graph (Action Step): " +
+        resActGraphBuild.error().message()
+    );
+  }
+  getActgraph().updateMaxArgForPnodes(false);
+
+  auto resActGraphValidate = getActgraph().validate();
+  if (!resActGraphValidate.has_value()) {
+    return err(
+        "Validate Action Graph: " + resActGraphValidate.error().message()
+    );
+  }
+
+  auto resActGraphInference = inferencer.inference(getActgraph(), &requiredConditions);
+  if (!resActGraphInference.has_value()) {
+    return err(
+        "Inference Action Graph: " + resActGraphInference.error().message()
     );
   }
 

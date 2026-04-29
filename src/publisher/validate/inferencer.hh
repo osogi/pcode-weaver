@@ -1,6 +1,7 @@
 #pragma once
 
 #include "validate/pcodegraph.hh"
+#include "validate/action_pcodegraph.hh"
 #include "validate/solvers.hh"
 #include "validate/specconditions.hh"
 
@@ -18,7 +19,6 @@ class Inferencer {
 
 protected:
   Context &cntx;
-  const graph::PcodeGraph &pgraph;
   solvers::SizeSolver &sizeSolver;
   solvers::BBSolver &bbSolver;
 
@@ -135,11 +135,14 @@ public:
       Context &_context, const graph::PcodeGraph &_graph,
       solvers::SizeSolver &_sizeSolver, solvers::BBSolver &_bbSolver
   )
-      : cntx(_context), pgraph(_graph), sizeSolver(_sizeSolver),
+      : cntx(_context), sizeSolver(_sizeSolver),
         bbSolver(_bbSolver) {}
 
-  Errorable<void> inference(CondVectType *conds = nullptr);
+  Errorable<void> inference(const graph::PcodeGraph& pgraph, CondVectType *conds = nullptr);
 
-  Errorable<void> inferenceUserConds(CondVectType *conds = nullptr);
+  Errorable<void> inference(const graph::ActionPcodeGraph& pgraph, CondVectType *conds = nullptr);
+
+
+  Errorable<void> inferenceUserConds(const graph::PcodeGraph& pgraph, CondVectType *conds = nullptr);
 };
 } // namespace infer

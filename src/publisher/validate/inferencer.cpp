@@ -88,8 +88,9 @@ Inferencer::inferencePnode(const graph::GraphPnode &gp, CondVectType *conds) {
   return {};
 }
 
-Errorable<void> Inferencer::inference(CondVectType *conds) {
-  for (const auto &gn : pgraph.nodes) {
+Errorable<void>
+Inferencer::inference(const graph::PcodeGraph &pgraph, CondVectType *conds) {
+  for (const auto &gn : pgraph.liveNodes()) {
     Errorable<void> res = std::visit(
         util::overloaded{
             [&](const graph::GraphVarnode &gvn) {
@@ -151,9 +152,29 @@ Errorable<void> Inferencer::inferenceVarnodeUserConds(
   return {};
 }
 
-Errorable<void> Inferencer::inferenceUserConds(CondVectType *conds) {
+Errorable<void> Inferencer::inference(
+    const graph::ActionPcodeGraph &pgraph, CondVectType *conds
+) {
+  auto res = inference(static_cast<const graph::PcodeGraph &>(pgraph), conds);
+  if (!res.has_value()) {
+    return res;
+  }
 
-  for (const auto &gn : pgraph.nodes) {
+  for (const auto &[id, nvg] : pgraph.newVarnodes) {
+    graph::GraphVarnode *gn = pgraph.varnodes.at(id);
+    for (const ast::Size &sz : nvg->specSizes) {
+      addSizeEqualSizeAndVarnode(sz, gn, conds);
+    }
+  }
+
+  return {};
+}
+
+Errorable<void> Inferencer::inferenceUserConds(
+    const graph::PcodeGraph &pgraph, CondVectType *conds
+) {
+
+  for (const auto &gn : pgraph.liveNodes()) {
     Errorable<void> res = std::visit(
         util::overloaded{
             [&](const graph::GraphVarnode &gvn) {

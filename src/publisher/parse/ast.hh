@@ -18,9 +18,9 @@ template <class T> using Box = std::unique_ptr<T>;
 
 class Id {
 public:
-  Id() : num(-1), name("UNDEFINED") {};
   Id(std::string _name, size_t _num, bool _userDefined = false)
       : num(_num), name(_name), userDefined(_userDefined) {};
+  Id() : Id("UNDEFINED", -1) {};
 
   std::weak_ordering operator<=>(const Id &other) const {
     std::weak_ordering res =

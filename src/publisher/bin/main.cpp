@@ -25,8 +25,15 @@ int main(int argc, char *argv[]) {
         for (const auto &c : rtcVec) {
           std::cout << "\t" << c << "\n";
         }
+
+        auto rqcVec = vdrv.getRQC();
+        std::cout << "RQC:\n";
+        for (const auto &c : rqcVec) {
+          std::cout << "\t" << c << "\n";
+        }
       } else {
-        std::cout << "Validate Error: " << validateRes.error().message() << "\n";
+        std::cout << "Validate Error: " << validateRes.error().message()
+                  << "\n";
       }
     } else {
       std::cout << "Error detected!\n";

@@ -49,9 +49,17 @@ size_t PnodeEdges::updateMaxArgNum(bool onlyAction) {
   return maxArg;
 }
 
+bool isDeleted(const GraphVarnode &x) { return false; }
+
+bool isDeleted(const GraphPnode &x) { return x.deleted; }
+
+bool isDeleted(const GraphNode &gn) {
+  return std::visit([](const auto &x) { return isDeleted(x); }, gn);
+}
+
 GraphVarnode *PcodeGraph::uniqAddToNodes(const GraphVarnode &gvn) {
   std::unique_ptr<GraphNode> gn_ptr = std::make_unique<GraphNode>(gvn);
-  GraphVarnode *gvn_ptr = &std::get<GraphVarnode>(*gn_ptr);
+  GraphVarnode *gvn_ptr = std::get_if<GraphVarnode>(gn_ptr.get());
 
   nodes.push_back(std::move(gn_ptr));
   return gvn_ptr;
@@ -195,14 +203,14 @@ Errorable<void> PcodeGraph::validatePnodeInArray(
       if (argNum < arr.array.size()) {
         return err(
             "Unexpected " + toStr(gv) + " as " + std::to_string(argNum) +
-            " arg of pnode " + gpn.id.getName() + "expected non-Empty"
+            " arg of pnode " + gpn.id.getName() + " expected non-Empty"
         );
       }
     } else {
       if (argNum >= arr.array.size()) {
         return err(
             "Unexpected " + toStr(gv) + " as " + std::to_string(argNum) +
-            " arg of pnode " + gpn.id.getName() + "expected Empty"
+            " arg of pnode " + gpn.id.getName() + " expected Empty"
         );
       }
     }
@@ -438,7 +446,7 @@ PcodeGraph::addPatterns(const std::vector<ast::RulePattern> &ps) {
 }
 
 Errorable<void> PcodeGraph::validate() {
-  for (const auto &gn : nodes) {
+  for (const auto &gn : liveNodes()) {
     Errorable<void> res = std::visit(
         util::overloaded{
             [this](const GraphVarnode &gvn) { return validateVarnode(gvn); },
@@ -454,7 +462,7 @@ Errorable<void> PcodeGraph::validate() {
 }
 
 void PcodeGraph::updateMaxArgForPnodes(bool actionStep) {
-  for (auto &[_id, gpn] : pnodes) {
+  for (auto &[_id, gpn] : livePnodes()) {
     gpn->edges.updateMaxArgNum(actionStep);
   }
 }

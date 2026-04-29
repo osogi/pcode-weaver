@@ -4,7 +4,8 @@ validator_src = [
   'specconditions.cpp',
   'pcodegraph.cpp',
   'inferencer.cpp',
-  'validate_driver.cpp'
+  'validate_driver.cpp',
+  'action_pcodegraph.cpp'
 ]
 
 validator_lib = static_library(

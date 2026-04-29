@@ -3,6 +3,9 @@
 #include "parse/ast.hh"
 #include "parse/context.hh"
 
+#include <list>
+#include <ranges>
+
 namespace infer {
 class Inferencer; // forward decl
 }
@@ -15,29 +18,34 @@ using GraphPnode = OpGraphNode;
 
 struct VarnodeEdges {
   std::optional<GraphPnode *> def; // nullopt --- unknown; nullptr --- no def
-  std::vector<GraphPnode *> descend;
+  std::list<GraphPnode *> descend;
 
-  VarnodeEdges() : def(std::nullopt), descend(0) {};
+  VarnodeEdges() : def(std::nullopt), descend() {};
+
+  void eraseFromDescend(GraphPnode *gp) {
+    descend.erase(std::find(descend.begin(), descend.end(), gp));
+  };
 };
 
 struct VarGraphNode {
-  const ast::Id &id;
+  const ast::Id id;
 
   std::vector<ast::VarnodeType> userTypes;
 
   VarnodeEdges edges;
   VarGraphNode(const ast::Id &_id) : id(_id), userTypes(0), edges() {};
+  virtual ~VarGraphNode() {}
 };
 
 struct ConstGraphNode {
-  const ast::VarnodeConst &origVarnode;
+  const ast::VarnodeConst origVarnode;
 
   VarnodeEdges edges;
   ConstGraphNode(const ast::VarnodeConst &vn) : origVarnode(vn), edges() {}
 };
 
 struct EmptyGraphNode {
-  const ast::VarnodeEmpty &origVarnode;
+  const ast::VarnodeEmpty origVarnode;
 
   VarnodeEdges edges;
   EmptyGraphNode(const ast::VarnodeEmpty &vn) : origVarnode(vn), edges() {}
@@ -66,21 +74,26 @@ struct PnodeEdges {
   size_t updateMaxArgNum(bool onlyAction);
 };
 
-using NestedPnode = std::variant<ast::PnodeVar, ast::PnodeVarWithType>;
-
 struct OpGraphNode {
-  const ast::Id &id;
+  const ast::Id id;
   std::optional<ast::OpType> opTp;
 
   std::vector<ast::BasicBlockVar> userBbs;
 
   PnodeEdges edges;
+  bool deleted;
 
   OpGraphNode(const ast::Id &_id)
-      : id(_id), opTp(std::nullopt), userBbs(0), edges() {}
+      : id(_id), opTp(std::nullopt), userBbs(0), edges(), deleted(false) {}
+  virtual ~OpGraphNode() {}
+
 };
 
 using GraphNode = std::variant<GraphVarnode, GraphPnode>;
+
+bool isDeleted(const GraphVarnode &x);
+bool isDeleted(const GraphPnode &x);
+bool isDeleted(const GraphNode &gn);
 
 // a <= b
 struct CondBBDominate {
@@ -105,9 +118,9 @@ protected:
   GraphPnode *uniqAddToNodes(const OpGraphNode &pn);
 
   // returns the guaranteed VarGraphNode
-  GraphVarnode *findOrCreateVarnode(const ast::Id &id);
+  virtual GraphVarnode *findOrCreateVarnode(const ast::Id &id);
   // returns the guaranteed OpGraphNode
-  GraphPnode *findOrCreatePnode(const ast::Id &id);
+  virtual GraphPnode *findOrCreatePnode(const ast::Id &id);
 
   Errorable<void> validateVarnode(const GraphVarnode &gvn);
   Errorable<void> validatePnodeInSpecial(
@@ -121,9 +134,6 @@ protected:
   );
   Errorable<void> validatePnode(const GraphPnode &gpn);
 
-public:
-  PcodeGraph() = default;
-
   GraphVarnode *addVarnodeTerm(const ast::VarnodeTerm &vt);
   Errorable<GraphPnode *> addPnodeTerm(const ast::PnodeTerm &pt);
 
@@ -131,13 +141,20 @@ public:
   Errorable<GraphPnode *> addPnodePattern(const ast::PnodePattern &pp);
   const ast::BasicBlockVar &addBBPattern(const ast::BasicBlockPattern &bbp);
   Errorable<void> addPattern(const ast::RulePattern &p);
-  Errorable<void> addPatterns(const std::vector<ast::RulePattern> &ps);
 
+public:
+  PcodeGraph() = default;
+  PcodeGraph(const std::vector<ast::RulePattern> &pats) : PcodeGraph() {
+    auto res = addPatterns(pats);
+    assert(res.has_value());
+  };
+
+  Errorable<void> addPatterns(const std::vector<ast::RulePattern> &ps);
   Errorable<void> validate();
   void updateMaxArgForPnodes(bool patternStep);
 
 protected:
-  std::vector<std::unique_ptr<GraphNode>> nodes;
+  std::list<std::unique_ptr<GraphNode>> nodes;
 
   // store guaranteed VarGraphNode
   std::unordered_map<ast::Id, GraphVarnode *> varnodes;
@@ -146,5 +163,23 @@ protected:
   std::unordered_map<ast::Id, GraphPnode *> pnodes;
 
   std::vector<CondBBDominate> bbUserConditions;
+
+public:
+  auto liveNodes() const {
+    return nodes |
+           std::views::filter([](const auto &p) { return !isDeleted(*p); });
+  }
+
+  auto liveVarnodes() const {
+    return varnodes | std::views::filter([](const auto &kv) {
+             return kv.second && !isDeleted(*kv.second);
+           });
+  }
+
+  auto livePnodes() const {
+    return pnodes | std::views::filter([](const auto &kv) {
+             return kv.second && !isDeleted(*kv.second);
+           });
+  }
 };
 }; // namespace graph
