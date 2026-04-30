@@ -20,26 +20,27 @@ ActionPcodeGraph::disconnectFromOutVarnode(GraphPnode *gp) {
   //  and just work after with it as with common nodes.
   // But it can create some side effects and need to think about it.
 
+  const OpGraphNode &og = *unpackGP(*gp);
   // Don't need to update if there isn't one
-  if (gp->opTp.has_value() &&
+  if (og.opTp.has_value() &&
       std::holds_alternative<ast::OutVarnodeConditionNoOut>(
-          gp->opTp.value().scheme.outVarnodeCond
+          og.opTp.value().scheme.outVarnodeCond
       )) {
     return nullptr;
   }
-  if (gp->edges.output != nullptr) {
-    graph::getEdges(gp->edges.output).def = nullptr;
-    return gp->edges.output;
+  if (og.edges.output != nullptr) {
+    graph::getEdges(og.edges.output).def = nullptr;
+    return og.edges.output;
   }
 
   return err(
-      "Pnode " + gp->id.getName() +
+      "Pnode " + og.id.getName() +
       " should has explicit out (as varnode or EMPTY)"
   );
 }
 
 GraphVarnode *ActionPcodeGraph::createEmptyGraphNode() {
-  return uniqAddToNodes(EmptyGraphNode(ast::VarnodeEmpty{}));
+  return uniqAddToNodes<GraphVarnode>(EmptyGraphNode(ast::VarnodeEmpty{}));
 }
 
 Errorable<GraphPnode *>
@@ -48,7 +49,7 @@ ActionPcodeGraph::disconnectFromDefPnode(GraphVarnode *gvn) {
   if (vedges.def.has_value()) {
     GraphPnode *pdef = vedges.def.value();
     if (pdef != nullptr) {
-      pdef->edges.output = createEmptyGraphNode();
+      unpackGP(*pdef)->edges.output = createEmptyGraphNode();
     }
     return pdef;
   }
@@ -59,8 +60,10 @@ ActionPcodeGraph::disconnectFromDefPnode(GraphVarnode *gvn) {
 }
 
 Errorable<void> ActionPcodeGraph::deletePnode(GraphPnode *gp) {
-  if (newPnodes.contains(gp->id)) {
-    return err("Trying to delete new created node " + gp->id.getName());
+  OpGraphNode &og = *unpackGP(*gp);
+
+  if (newPnodes.contains(og.id)) {
+    return err("Trying to delete new created node " + og.id.getName());
   }
 
   auto disRes = disconnectFromOutVarnode(gp);
@@ -68,11 +71,11 @@ Errorable<void> ActionPcodeGraph::deletePnode(GraphPnode *gp) {
     return std::unexpected(disRes.error());
   }
 
-  for (const auto &[_argNum, gv] : gp->edges.inrefs) {
+  for (const auto &[_argNum, gv] : og.edges.inrefs) {
     getEdges(gv).eraseFromDescend(gp);
   }
 
-  gp->deleted = true;
+  og.deleted = true;
 
   return {};
 };
@@ -84,9 +87,9 @@ GraphVarnode *ActionPcodeGraph::findOrCreateVarnode(const ast::Id &id) {
   } else {
     NewVarGraphNode vgn(id);
 
-    varnodes[id] = uniqAddToNodes(vgn);
+    varnodes[id] = uniqAddToNodes<GraphVarnode>(vgn);
     NewVarGraphNode *castRes = dynamic_cast<NewVarGraphNode *>(
-        get_if_force<VarGraphNode>(varnodes[id])
+        get_if_uniq<VarGraphNode>(varnodes[id])
     );
     assert(castRes != nullptr);
 
@@ -102,8 +105,9 @@ GraphPnode *ActionPcodeGraph::findOrCreatePnode(const ast::Id &id) {
   } else {
     NewOpGraphNode pn(id);
 
-    pnodes[id] = uniqAddToNodes(pn);
-    NewOpGraphNode *castRes = dynamic_cast<NewOpGraphNode *>(pnodes[id]);
+    pnodes[id] = uniqAddToNodes<GraphPnode>(pn);
+    NewOpGraphNode *castRes =
+        dynamic_cast<NewOpGraphNode *>(unpackGP(*pnodes[id]).get());
     assert(castRes != nullptr);
 
     newPnodes[id] = castRes;
@@ -197,7 +201,7 @@ ActionPcodeGraph::addVarnodeAction(const ast::VarnodeAction &va) {
             GraphVarnode *gv = resvat.value();
 
             disconnectFromOutVarnode(gp);
-            gp->edges.output = gv;
+            unpackGP(*gp)->edges.output = gv;
 
             disconnectFromDefPnode(gv);
             getEdges(gv).def = gp;
@@ -233,10 +237,11 @@ ActionPcodeGraph::addPnodeAction(const ast::PnodeAction &pa) {
             GraphPnode *gp = respat.value();
             uint32_t argNum = setNthArg.num;
 
-            if (gp->edges.inrefs.contains(argNum)) {
-              getEdges(gp->edges.inrefs[argNum]).eraseFromDescend(gp);
+            PnodeEdges &pnodeEdges = unpackGP(*gp)->edges;
+            if (pnodeEdges.inrefs.contains(argNum)) {
+              getEdges(pnodeEdges.inrefs[argNum]).eraseFromDescend(gp);
             }
-            gp->edges.inrefs[argNum] = gv;
+            pnodeEdges.inrefs[argNum] = gv;
 
             getEdges(gv).descend.push_back(gp);
 

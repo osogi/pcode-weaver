@@ -1,17 +1,20 @@
 #include "validate/inferencer.hh"
 #include "inferencer.hh"
 
+using graph::unq;
+
 namespace infer {
+
 Errorable<void> Inferencer::inferenceVarnode(
     const graph::GraphVarnode &gvn, CondVectType *conds
 ) {
-  const graph::VarGraphNode *vg = std::get_if<graph::VarGraphNode>(&gvn);
+  const graph::VarGraphNode *vg = get_if_uniq<graph::VarGraphNode>(&gvn);
   if (vg != nullptr) {
     auto def = vg->edges.def;
     if (def.has_value()) {
-      graph::GraphPnode *gp = def.value();
+      graph::OpGraphNode &og = *graph::unpackGP(*def.value());
       return addBBEqual(
-          specvalues::BBOfVarnode(vg->id), specvalues::BBOfPnode(gp->id), conds
+          specvalues::BBOfVarnode(vg->id), specvalues::BBOfPnode(og.id), conds
       );
     }
   }
@@ -21,7 +24,7 @@ Errorable<void> Inferencer::inferenceVarnode(
 Errorable<void> Inferencer::addSizeEqualSizeAndVarnode(
     const ast::Size &sz, const graph::GraphVarnode *gvn, CondVectType *conds
 ) {
-  const graph::VarGraphNode *vg = std::get_if<graph::VarGraphNode>(gvn);
+  const graph::VarGraphNode *vg = get_if_uniq<graph::VarGraphNode>(gvn);
   if (vg != nullptr) {
     solvers::SizeTerm szTerm = std::visit(
         util::overloaded{
@@ -40,11 +43,12 @@ Errorable<void> Inferencer::addSizeEqualSizeAndVarnode(
 Errorable<void>
 Inferencer::inferencePnode(const graph::GraphPnode &gp, CondVectType *conds) {
 
-  for (const auto &[_arg_num, gvn] : gp.edges.inrefs) {
-    const graph::VarGraphNode *vg = std::get_if<graph::VarGraphNode>(gvn);
+  const graph::OpGraphNode &og = *graph::unpackGP(gp);
+  for (const auto &[_arg_num, gvn] : og.edges.inrefs) {
+    const graph::VarGraphNode *vg = get_if_uniq<graph::VarGraphNode>(gvn);
     if (vg != nullptr) {
       auto res = addBBDominate(
-          specvalues::BBOfVarnode(vg->id), specvalues::BBOfPnode(gp.id), conds
+          specvalues::BBOfVarnode(vg->id), specvalues::BBOfPnode(og.id), conds
       );
       if (!res.has_value()) {
         return res;
@@ -52,17 +56,17 @@ Inferencer::inferencePnode(const graph::GraphPnode &gp, CondVectType *conds) {
     }
   }
 
-  if (gp.opTp.has_value()) {
-    const ast::OpType &origOpTp = gp.opTp.value();
+  if (og.opTp.has_value()) {
+    const ast::OpType &origOpTp = og.opTp.value();
     ast::OpType freeOpTp = cntx.opTypePredefFactory.alphaUpdate(origOpTp);
 
     auto res = std::visit(
         util::overloaded{
             [&](const ast::InVarnodeConditionsArray &arr) -> Errorable<void> {
               for (size_t i = 0; i < arr.array.size(); i++) {
-                if (gp.edges.inrefs.contains(i)) {
+                if (og.edges.inrefs.contains(i)) {
                   auto inres = addSizeEqualSizeAndVarnode(
-                      arr.array[i].size, gp.edges.inrefs.at(i), conds
+                      arr.array[i].size, og.edges.inrefs.at(i), conds
                   );
                   if (!inres.has_value()) {
                     return inres;
@@ -80,8 +84,8 @@ Inferencer::inferencePnode(const graph::GraphPnode &gp, CondVectType *conds) {
 
     const ast::Size *outSize = getSizeOutCond(freeOpTp.scheme.outVarnodeCond);
     if (outSize != nullptr) {
-      if (gp.edges.output != nullptr) {
-        addSizeEqualSizeAndVarnode(*outSize, gp.edges.output, conds);
+      if (og.edges.output != nullptr) {
+        addSizeEqualSizeAndVarnode(*outSize, og.edges.output, conds);
       }
     }
   }
@@ -112,11 +116,13 @@ Inferencer::inference(const graph::PcodeGraph &pgraph, CondVectType *conds) {
 Errorable<void> Inferencer::inferencePnodeUserConds(
     const graph::GraphPnode &gp, CondVectType *conds
 ) {
-  for (const auto &userBB : gp.userBbs) {
+  const graph::OpGraphNode &og = *graph::unpackGP(gp);
+
+  for (const auto &userBB : og.userBbs) {
 
     // don't change conditions then we add id first time
     auto tmpConds = bbSolver.contains(userBB.id) ? conds : nullptr;
-    auto res = addBBEqual(specvalues::BBOfPnode(gp.id), userBB.id, tmpConds);
+    auto res = addBBEqual(specvalues::BBOfPnode(og.id), userBB.id, tmpConds);
     if (!res.has_value()) {
       return res;
     }
@@ -127,7 +133,7 @@ Errorable<void> Inferencer::inferencePnodeUserConds(
 Errorable<void> Inferencer::inferenceVarnodeUserConds(
     const graph::GraphVarnode &gvn, CondVectType *conds
 ) {
-  const graph::VarGraphNode *vg = std::get_if<graph::VarGraphNode>(&gvn);
+  const graph::VarGraphNode *vg = get_if_uniq<graph::VarGraphNode>(&gvn);
 
   for (const auto &vt : vg->userTypes) {
     // don't change conditions then we add id first time

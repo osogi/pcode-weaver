@@ -6,9 +6,9 @@ namespace graph {
 VarnodeEdges &getEdges(GraphVarnode *gv) {
   return std::visit(
       util::overloaded{
-          [](VarGraphNode &v) -> VarnodeEdges & { return v.edges; },
-          [](ConstGraphNode &v) -> VarnodeEdges & { return v.edges; },
-          [](EmptyGraphNode &v) -> VarnodeEdges & { return v.edges; },
+          [](unq<VarGraphNode> &v) -> VarnodeEdges & { return v->edges; },
+          [](unq<ConstGraphNode> &v) -> VarnodeEdges & { return v->edges; },
+          [](unq<EmptyGraphNode> &v) -> VarnodeEdges & { return v->edges; },
       },
       *gv
   );
@@ -17,18 +17,20 @@ VarnodeEdges &getEdges(GraphVarnode *gv) {
 std::string toStr(const GraphVarnode *gv) {
   return std::visit(
       util::overloaded{
-          [](const VarGraphNode &v) -> std::string { return v.id.getName(); },
-          [](const ConstGraphNode &v) -> std::string {
-            return "#" + std::to_string(v.origVarnode.value);
+          [](const unq<VarGraphNode> &v) -> std::string {
+            return v->id.getName();
           },
-          [](const EmptyGraphNode &v) -> std::string { return "EMPTY"; },
+          [](const unq<ConstGraphNode> &v) -> std::string {
+            return "#" + std::to_string(v->origVarnode.value);
+          },
+          [](const unq<EmptyGraphNode> &v) -> std::string { return "EMPTY"; },
       },
       *gv
   );
 }
 
 bool isEmpty(const GraphVarnode *gv) {
-  return std::holds_alternative<EmptyGraphNode>(*gv);
+  return std::holds_alternative<unq<EmptyGraphNode>>(*gv);
 }
 
 size_t PnodeEdges::updateMaxArgNum(bool onlyAction) {
@@ -49,29 +51,21 @@ size_t PnodeEdges::updateMaxArgNum(bool onlyAction) {
   return maxArg;
 }
 
+// since GraphPnode has only one element in the variant
+const unq<OpGraphNode> &unpackGP(const GraphPnode &x) {
+  static_assert(
+      std::is_same_v<GraphPnode, std::variant<unq<OpGraphNode>>>,
+      "Expected GraphPnode is std::variant<unq<OpGraphNode>>"
+  );
+  return std::get<unq<OpGraphNode>>(x);
+}
+
 bool isDeleted(const GraphVarnode &x) { return false; }
 
-bool isDeleted(const GraphPnode &x) { return x.deleted; }
+bool isDeleted(const GraphPnode &x) { return unpackGP(x)->deleted; }
 
 bool isDeleted(const GraphNode &gn) {
   return std::visit([](const auto &x) { return isDeleted(x); }, gn);
-}
-
-GraphVarnode *PcodeGraph::uniqAddToNodes(const GraphVarnode &gvn) {
-  std::unique_ptr<GraphNode> gn_ptr = std::make_unique<GraphNode>(gvn);
-  GraphVarnode *gvn_ptr = std::get_if<GraphVarnode>(gn_ptr.get());
-
-  nodes.push_back(std::move(gn_ptr));
-  return gvn_ptr;
-}
-
-GraphPnode *PcodeGraph::uniqAddToNodes(const OpGraphNode &pn) {
-  std::unique_ptr<GraphNode> gn_ptr =
-      std::make_unique<GraphNode>(GraphPnode(pn));
-  GraphPnode *gpn_ptr = &std::get<GraphPnode>(*gn_ptr);
-
-  nodes.push_back(std::move(gn_ptr));
-  return gpn_ptr;
 }
 
 // returns the guaranteed VarGraphNode
@@ -82,7 +76,7 @@ GraphVarnode *PcodeGraph::findOrCreateVarnode(const ast::Id &id) {
   } else {
     VarGraphNode vn(id);
 
-    varnodes[id] = uniqAddToNodes(vn);
+    varnodes[id] = uniqAddToNodes<GraphVarnode>(vn);
     return varnodes[id];
   }
 }
@@ -95,14 +89,15 @@ GraphPnode *PcodeGraph::findOrCreatePnode(const ast::Id &id) {
   } else {
     OpGraphNode pn(id);
 
-    pnodes[id] = uniqAddToNodes(pn);
+    pnodes[id] = uniqAddToNodes<GraphPnode>(pn);
     return pnodes[id];
   }
 }
 Errorable<void> PcodeGraph::validateVarnode(const GraphVarnode &gvn) {
   return std::visit(
       util::overloaded{
-          [&](const VarGraphNode &var) -> Errorable<void> {
+          [&](const unq<VarGraphNode> &uptr) -> Errorable<void> {
+            const VarGraphNode &var = *uptr;
             if (var.edges.def.has_value() && var.edges.def.value() == nullptr) {
               return err(
                   "Varnode " + var.id.getName() + " hasn't defined pnode"
@@ -110,34 +105,39 @@ Errorable<void> PcodeGraph::validateVarnode(const GraphVarnode &gvn) {
             }
             return {};
           },
-          [&](const ConstGraphNode &cnst) -> Errorable<void> {
+          [&](const unq<ConstGraphNode> &uptr) -> Errorable<void> {
+            const ConstGraphNode &cnst = *uptr;
+
             if (cnst.edges.def.has_value() &&
                 cnst.edges.def.value() != nullptr) {
               return err(
                   "Const varnode " + std::to_string(cnst.origVarnode.value) +
-                  " defined by pnode " + cnst.edges.def.value()->id.getName()
+                  " defined by pnode " +
+                  unpackGP(*cnst.edges.def.value())->id.getName()
               );
             }
             return {};
           },
-          [&](const EmptyGraphNode &cnst) -> Errorable<void> { return {}; },
+          [&](const unq<EmptyGraphNode> &cnst) -> Errorable<void> {
+            return {};
+          },
       },
       gvn
   );
 }
 
 Errorable<void> PcodeGraph::validatePnodeInSpecial(
-    const GraphPnode &gpn, const ast::InVarnodeConditionsSpecial &spec
+    const OpGraphNode &og, const ast::InVarnodeConditionsSpecial &spec
 ) {
-  size_t patMaxArg = gpn.edges.maxAgrNumPattern;
-  size_t actMaxArg = gpn.edges.maxAgrNumAction;
+  size_t patMaxArg = og.edges.maxAgrNumPattern;
+  size_t actMaxArg = og.edges.maxAgrNumAction;
 
   size_t maxArgNum = std::min(patMaxArg, actMaxArg);
-  for (const auto &[argNum, gv] : gpn.edges.inrefs) {
+  for (const auto &[argNum, gv] : og.edges.inrefs) {
     if (argNum <= maxArgNum) {
       if (isEmpty(gv)) {
         return err(
-            "Pnode " + gpn.id.getName() + " has EMPTY as " +
+            "Pnode " + og.id.getName() + " has EMPTY as " +
             std::to_string(argNum) +
             " arg. Not expected for all args <= " + std::to_string(argNum)
         );
@@ -149,8 +149,8 @@ Errorable<void> PcodeGraph::validatePnodeInSpecial(
     // added new args
     for (size_t i = patMaxArg + 1; i <= actMaxArg; i++) {
       std::string instead = "";
-      if (gpn.edges.inrefs.contains(i)) {
-        const GraphVarnode *gv = gpn.edges.inrefs.at(i);
+      if (og.edges.inrefs.contains(i)) {
+        const GraphVarnode *gv = og.edges.inrefs.at(i);
         if (!isEmpty(gv)) {
           instead = toStr(gv);
         }
@@ -160,7 +160,7 @@ Errorable<void> PcodeGraph::validatePnodeInSpecial(
 
       if (instead.size() != 0) {
         return err(
-            "Expected all args for pnode (" + gpn.id.getName() + ") from " +
+            "Expected all args for pnode (" + og.id.getName() + ") from " +
             std::to_string(patMaxArg + 1) + " to " + std::to_string(actMaxArg) +
             " will be explicity and non-EMPTY. But got instead " + instead +
             " as " + std::to_string(i) + "arg"
@@ -171,8 +171,8 @@ Errorable<void> PcodeGraph::validatePnodeInSpecial(
     // removed old args
     for (size_t i = actMaxArg + 1; i <= patMaxArg; i++) {
       std::string instead = "";
-      if (gpn.edges.inrefs.contains(i)) {
-        const GraphVarnode *gv = gpn.edges.inrefs.at(i);
+      if (og.edges.inrefs.contains(i)) {
+        const GraphVarnode *gv = og.edges.inrefs.at(i);
         if (isEmpty(gv)) {
           instead = toStr(gv);
         }
@@ -182,7 +182,7 @@ Errorable<void> PcodeGraph::validatePnodeInSpecial(
 
       if (instead.size() != 0) {
         return err(
-            "Expected all args for pnode (" + gpn.id.getName() + ") from " +
+            "Expected all args for pnode (" + og.id.getName() + ") from " +
             std::to_string(actMaxArg + 1) + " to " + std::to_string(patMaxArg) +
             " will be explicity and EMPTY. But got instead " + instead +
             " as " + std::to_string(i) + "arg"
@@ -195,22 +195,22 @@ Errorable<void> PcodeGraph::validatePnodeInSpecial(
 }
 
 Errorable<void> PcodeGraph::validatePnodeInArray(
-    const GraphPnode &gpn, const ast::InVarnodeConditionsArray &arr
+    const OpGraphNode &og, const ast::InVarnodeConditionsArray &arr
 ) {
-  for (auto &[argNum, gv] : gpn.edges.inrefs) {
+  for (auto &[argNum, gv] : og.edges.inrefs) {
 
     if (isEmpty(gv)) {
       if (argNum < arr.array.size()) {
         return err(
             "Unexpected " + toStr(gv) + " as " + std::to_string(argNum) +
-            " arg of pnode " + gpn.id.getName() + " expected non-Empty"
+            " arg of pnode " + og.id.getName() + " expected non-Empty"
         );
       }
     } else {
       if (argNum >= arr.array.size()) {
         return err(
             "Unexpected " + toStr(gv) + " as " + std::to_string(argNum) +
-            " arg of pnode " + gpn.id.getName() + " expected Empty"
+            " arg of pnode " + og.id.getName() + " expected Empty"
         );
       }
     }
@@ -219,20 +219,18 @@ Errorable<void> PcodeGraph::validatePnodeInArray(
 }
 
 Errorable<void> PcodeGraph::validatePnodeOut(
-    const GraphPnode &gpn, const ast::OutVarnodeCondition &outCond
+    const OpGraphNode &og, const ast::OutVarnodeCondition &outCond
 ) {
-  if (gpn.edges.output != nullptr) {
-    if (isEmpty(gpn.edges.output)) {
+  if (og.edges.output != nullptr) {
+    if (isEmpty(og.edges.output)) {
       if (std::holds_alternative<ast::OutVarnodeConditionDefault>(outCond)) {
-        return err(
-            "Expected see non-empty output of pnode " + gpn.id.getName()
-        );
+        return err("Expected see non-empty output of pnode " + og.id.getName());
       }
     } else {
       if (std::holds_alternative<ast::OutVarnodeConditionNoOut>(outCond)) {
         return err(
-            "Expected see empty output of pnode " + gpn.id.getName() +
-            ", but get " + toStr(gpn.edges.output)
+            "Expected see empty output of pnode " + og.id.getName() +
+            ", but get " + toStr(og.edges.output)
         );
       }
     }
@@ -241,15 +239,16 @@ Errorable<void> PcodeGraph::validatePnodeOut(
 }
 
 Errorable<void> PcodeGraph::validatePnode(const GraphPnode &gpn) {
-  if (gpn.opTp.has_value()) {
-    const ast::OpType &opTp = gpn.opTp.value();
+  const OpGraphNode &og = *unpackGP(gpn);
+  if (og.opTp.has_value()) {
+    const ast::OpType &opTp = og.opTp.value();
     auto res = std::visit(
         util::overloaded{
             [&](const ast::InVarnodeConditionsArray &arr) {
-              return validatePnodeInArray(gpn, arr);
+              return validatePnodeInArray(og, arr);
             },
             [&](const ast::InVarnodeConditionsSpecial &spec) {
-              return validatePnodeInSpecial(gpn, spec);
+              return validatePnodeInSpecial(og, spec);
             },
         },
         opTp.scheme.inVarnodeConds
@@ -271,15 +270,15 @@ GraphVarnode *PcodeGraph::addVarnodeTerm(const ast::VarnodeTerm &vt) {
           },
           [this](const ast::VarnodeVarWithType &vn) {
             GraphVarnode *gvn = findOrCreateVarnode(vn.var.id);
-            VarGraphNode *vgn = get_if_force<VarGraphNode>(gvn);
+            VarGraphNode *vgn = get_if_force<unq<VarGraphNode>>(gvn)->get();
             vgn->userTypes.push_back(vn.vntype);
             return gvn;
           },
           [this](const ast::VarnodeEmpty &orig) {
-            return uniqAddToNodes(EmptyGraphNode{orig});
+            return uniqAddToNodes<GraphVarnode>(EmptyGraphNode{orig});
           },
           [this](const ast::VarnodeConst &orig) {
-            return uniqAddToNodes(ConstGraphNode{orig});
+            return uniqAddToNodes<GraphVarnode>(ConstGraphNode{orig});
           }
       },
       vt
@@ -294,7 +293,7 @@ Errorable<GraphPnode *> PcodeGraph::addPnodeTerm(const ast::PnodeTerm &pt) {
           },
           [this](const ast::PnodeVarWithType &pvt) -> Errorable<GraphPnode *> {
             GraphPnode *gpn = findOrCreatePnode(pvt.var.id);
-            OpGraphNode *pgn = static_cast<OpGraphNode *>(gpn);
+            OpGraphNode *pgn = unpackGP(*gpn).get();
             pgn->userBbs.push_back(pvt.ptype.bb);
 
             if (pgn->opTp.has_value()) {
@@ -326,12 +325,13 @@ PcodeGraph::addVarnodePattern(const ast::VarnodePattern &vp) {
             return addPnodePattern(defedBy.pp)
                 .and_then([&](GraphPnode *gp) -> Errorable<GraphVarnode *> {
                   GraphVarnode *gv = addVarnodeTerm(defedBy.v);
-                  auto &pOut = gp->edges.output;
+                  const unq<OpGraphNode> &og = unpackGP(*gp);
+                  auto &pOut = og->edges.output;
                   auto &vIn = getEdges(gv).def;
 
                   if (pOut != nullptr) {
                     return err(
-                        "Pnode " + gp->id.getName() + " already had output (" +
+                        "Pnode " + og->id.getName() + " already had output (" +
                         toStr(pOut) + ") during adding " + toStr(gv) +
                         " as new one"
                     );
@@ -339,10 +339,11 @@ PcodeGraph::addVarnodePattern(const ast::VarnodePattern &vp) {
                   pOut = gv;
 
                   if (vIn.has_value()) {
+
                     return err(
                         "Varnode " + toStr(gv) + " already had def pnode (" +
-                        vIn.value()->id.getName() + ") during adding " +
-                        gp->id.getName() + " as new one"
+                        unpackGP(*vIn.value())->id.getName() +
+                        ") during adding " + og->id.getName() + " as new one"
                     );
                   }
                   vIn = gp;
@@ -365,17 +366,19 @@ PcodeGraph::addPnodePattern(const ast::PnodePattern &pp) {
             return addVarnodePattern(nArg.vp).and_then([&](GraphVarnode *vn) {
               return addPnodeTerm(nArg.p).and_then(
                   [&](GraphPnode *pn) -> Errorable<GraphPnode *> {
+                    OpGraphNode &og = *unpackGP(*pn);
+
                     uint32_t n = nArg.num;
-                    if (pn->edges.inrefs.contains(n)) {
+                    if (og.edges.inrefs.contains(n)) {
                       return err(
-                          "Pnode " + pn->id.getName() + " already had " +
-                          toStr(pn->edges.inrefs[n]) + " as arg number " +
+                          "Pnode " + og.id.getName() + " already had " +
+                          toStr(og.edges.inrefs[n]) + " as arg number " +
                           std::to_string(n) + " during adding " + toStr(vn) +
                           " as new one"
                       );
                     };
 
-                    pn->edges.inrefs[n] = vn;
+                    og.edges.inrefs[n] = vn;
                     getEdges(vn).descend.push_back(pn);
                     return pn;
                   }
@@ -463,7 +466,7 @@ Errorable<void> PcodeGraph::validate() {
 
 void PcodeGraph::updateMaxArgForPnodes(bool actionStep) {
   for (auto &[_id, gpn] : livePnodes()) {
-    gpn->edges.updateMaxArgNum(actionStep);
+    unpackGP(*gpn)->edges.updateMaxArgNum(actionStep);
   }
 }
 

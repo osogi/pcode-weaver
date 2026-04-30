@@ -11,8 +11,13 @@ class Inferencer; // forward decl
 }
 
 namespace graph {
+template <class T> using unq = std::unique_ptr<T>;
+
 class OpGraphNode; // forward decl
-using GraphPnode = OpGraphNode;
+using GraphPnode = std::variant<unq<OpGraphNode>>;
+
+// since GraphPnode has only one element in the variant
+const unq<OpGraphNode> &unpackGP(const GraphPnode &x);
 
 // Varnodes
 
@@ -51,7 +56,8 @@ struct EmptyGraphNode {
   EmptyGraphNode(const ast::VarnodeEmpty &vn) : origVarnode(vn), edges() {}
 };
 
-using GraphVarnode = std::variant<VarGraphNode, ConstGraphNode, EmptyGraphNode>;
+using GraphVarnode =
+    std::variant<unq<VarGraphNode>, unq<ConstGraphNode>, unq<EmptyGraphNode>>;
 
 VarnodeEdges &getEdges(GraphVarnode *gv);
 std::string toStr(const GraphVarnode *gv);
@@ -86,7 +92,6 @@ struct OpGraphNode {
   OpGraphNode(const ast::Id &_id)
       : id(_id), opTp(std::nullopt), userBbs(0), edges(), deleted(false) {}
   virtual ~OpGraphNode() {}
-
 };
 
 using GraphNode = std::variant<GraphVarnode, GraphPnode>;
@@ -114,8 +119,15 @@ class PcodeGraph {
   friend class infer::Inferencer;
 
 protected:
-  GraphVarnode *uniqAddToNodes(const GraphVarnode &gvn);
-  GraphPnode *uniqAddToNodes(const OpGraphNode &pn);
+  template <class RetPtrType, class NodeType>
+  RetPtrType *uniqAddToNodes(NodeType x) {
+    GraphNode gn = std::make_unique<NodeType>(x);
+    unq<GraphNode> node_ptr = std::make_unique<GraphNode>(std::move(gn));
+
+    nodes.push_back(std::move(node_ptr));
+
+    return get_if_force<RetPtrType>(nodes.back().get());
+  }
 
   // returns the guaranteed VarGraphNode
   virtual GraphVarnode *findOrCreateVarnode(const ast::Id &id);
@@ -124,13 +136,13 @@ protected:
 
   Errorable<void> validateVarnode(const GraphVarnode &gvn);
   Errorable<void> validatePnodeInSpecial(
-      const GraphPnode &gpn, const ast::InVarnodeConditionsSpecial &spec
+      const OpGraphNode &og, const ast::InVarnodeConditionsSpecial &spec
   );
   Errorable<void> validatePnodeInArray(
-      const GraphPnode &gpn, const ast::InVarnodeConditionsArray &arr
+      const OpGraphNode &og, const ast::InVarnodeConditionsArray &arr
   );
   Errorable<void> validatePnodeOut(
-      const GraphPnode &gpn, const ast::OutVarnodeCondition &outCond
+      const OpGraphNode &og, const ast::OutVarnodeCondition &outCond
   );
   Errorable<void> validatePnode(const GraphPnode &gpn);
 
@@ -154,7 +166,7 @@ public:
   void updateMaxArgForPnodes(bool patternStep);
 
 protected:
-  std::list<std::unique_ptr<GraphNode>> nodes;
+  std::list<unq<GraphNode>> nodes;
 
   // store guaranteed VarGraphNode
   std::unordered_map<ast::Id, GraphVarnode *> varnodes;
@@ -166,8 +178,10 @@ protected:
 
 public:
   auto liveNodes() const {
-    return nodes |
-           std::views::filter([](const auto &p) { return !isDeleted(*p); });
+    return nodes | std::views::filter([](const unq<GraphNode> &p) {
+             return !isDeleted(*p);
+           });
+    ;
   }
 
   auto liveVarnodes() const {

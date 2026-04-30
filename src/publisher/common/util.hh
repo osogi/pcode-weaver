@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <typeinfo>
@@ -39,6 +40,14 @@ auto map_vector(const std::vector<T> &source, Func &&func) {
 template <class T> inline void hash_combine(std::size_t &seed, const T &v) {
   std::hash<T> hasher;
   seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
+template <class Alt, class VariantType> Alt *get_if_uniq(VariantType *variant) {
+  auto *p = std::get_if<std::unique_ptr<Alt>>(variant);
+  if (p != nullptr) {
+    return p->get();
+  }
+  return nullptr;
 }
 
 template <class Alt, class... Alts>
