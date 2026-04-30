@@ -33,11 +33,11 @@ bool isEmpty(const GraphVarnode *gv) {
   return std::holds_alternative<unq<EmptyGraphNode>>(*gv);
 }
 
-size_t PnodeEdges::updateMaxArgNum(bool onlyAction) {
-  size_t maxArg = 0;
+int32_t PnodeEdges::updateMaxArgNum(bool onlyAction) {
+  int32_t maxArg = -1;
   for (auto &[argNum, gv] : inrefs) {
     if (!isEmpty(gv)) {
-      if (maxArg < argNum) {
+      if (maxArg < static_cast<int64_t>(argNum)) {
         maxArg = argNum;
       }
     }
@@ -67,6 +67,12 @@ bool isDeleted(const GraphPnode &x) { return unpackGP(x)->deleted; }
 bool isDeleted(const GraphNode &gn) {
   return std::visit([](const auto &x) { return isDeleted(x); }, gn);
 }
+
+bool &isGhost(GraphVarnode *gv) {
+  return std::visit([](auto &v) -> bool & { return v->isGhost; }, *gv);
+}
+
+bool &isGhost(GraphPnode *gp) { return unpackGP(*gp)->isGhost; }
 
 // returns the guaranteed VarGraphNode
 GraphVarnode *PcodeGraph::findOrCreateVarnode(const ast::Id &id) {
@@ -129,12 +135,12 @@ Errorable<void> PcodeGraph::validateVarnode(const GraphVarnode &gvn) {
 Errorable<void> PcodeGraph::validatePnodeInSpecial(
     const OpGraphNode &og, const ast::InVarnodeConditionsSpecial &spec
 ) {
-  size_t patMaxArg = og.edges.maxAgrNumPattern;
-  size_t actMaxArg = og.edges.maxAgrNumAction;
+  int32_t patMaxArg = og.edges.maxAgrNumPattern;
+  int32_t actMaxArg = og.edges.maxAgrNumAction;
 
-  size_t maxArgNum = std::min(patMaxArg, actMaxArg);
+  int32_t maxArgNum = std::min(patMaxArg, actMaxArg);
   for (const auto &[argNum, gv] : og.edges.inrefs) {
-    if (argNum <= maxArgNum) {
+    if (static_cast<int64_t>(argNum) <= maxArgNum) {
       if (isEmpty(gv)) {
         return err(
             "Pnode " + og.id.getName() + " has EMPTY as " +
@@ -147,7 +153,7 @@ Errorable<void> PcodeGraph::validatePnodeInSpecial(
 
   if (patMaxArg < actMaxArg) {
     // added new args
-    for (size_t i = patMaxArg + 1; i <= actMaxArg; i++) {
+    for (int32_t i = patMaxArg + 1; i <= actMaxArg; i++) {
       std::string instead = "";
       if (og.edges.inrefs.contains(i)) {
         const GraphVarnode *gv = og.edges.inrefs.at(i);
@@ -169,7 +175,7 @@ Errorable<void> PcodeGraph::validatePnodeInSpecial(
     }
   } else {
     // removed old args
-    for (size_t i = actMaxArg + 1; i <= patMaxArg; i++) {
+    for (int32_t i = actMaxArg + 1; i <= patMaxArg; i++) {
       std::string instead = "";
       if (og.edges.inrefs.contains(i)) {
         const GraphVarnode *gv = og.edges.inrefs.at(i);
@@ -253,6 +259,11 @@ Errorable<void> PcodeGraph::validatePnode(const GraphPnode &gpn) {
         },
         opTp.scheme.inVarnodeConds
     );
+    if (!res.has_value()) {
+      return res;
+    }
+
+    res = validatePnodeOut(og, opTp.scheme.outVarnodeCond);
     if (!res.has_value()) {
       return res;
     }
@@ -467,6 +478,155 @@ Errorable<void> PcodeGraph::validate() {
 void PcodeGraph::updateMaxArgForPnodes(bool actionStep) {
   for (auto &[_id, gpn] : livePnodes()) {
     unpackGP(*gpn)->edges.updateMaxArgNum(actionStep);
+  }
+}
+
+GraphVarnode *
+PcodeGraph::createGhostVarnode(Context &cntx, const std::string &nameHint) {
+  ast::Id id = cntx.varnodeVarFactory.createId(nameHint);
+
+  GraphVarnode *gv = findOrCreateVarnode(id);
+  isGhost(gv) = true;
+  return gv;
+}
+
+GraphVarnode *PcodeGraph::createGhostEmptyVarnode() {
+  GraphVarnode *gv =
+      uniqAddToNodes<GraphVarnode>(EmptyGraphNode{ast::VarnodeEmpty{}});
+  isGhost(gv) = true;
+  return gv;
+}
+
+GraphPnode *
+PcodeGraph::createGhostPnode(Context &cntx, const std::string &nameHint) {
+  ast::Id id = cntx.pnodeVarFactory.createId(nameHint);
+
+  GraphPnode *gp = findOrCreatePnode(id);
+  isGhost(gp) = true;
+  return gp;
+}
+
+void PcodeGraph::pnodeTryAddInGhostNode(
+    Context &cntx, GraphPnode *gp, size_t argNum
+) {
+  OpGraphNode *og = unpackGP(*gp).get();
+
+  if (!og->edges.inrefs.contains(argNum)) {
+    GraphVarnode *gv = createGhostVarnode(
+        cntx,
+        "_ghost_arg_n" + std::to_string(argNum) + "_of_" + og->id.getName()
+    );
+    og->edges.inrefs[argNum] = gv;
+    getEdges(gv).descend.push_back(gp);
+  }
+}
+
+void PcodeGraph::addGhostNodesOpGraphNodeInSpecial(
+    Context &cntx, GraphPnode *gp, const ast::InVarnodeConditionsSpecial &spec
+) {
+  OpGraphNode *og = unpackGP(*gp).get();
+
+  int32_t maxArg =
+      std::min(og->edges.maxAgrNumPattern, og->edges.maxAgrNumAction);
+  for (int32_t i = 0; i <= maxArg; i++) {
+    pnodeTryAddInGhostNode(cntx, gp, static_cast<size_t>(i));
+  }
+};
+
+void PcodeGraph::addGhostNodesOpGraphNodeInArray(
+    Context &cntx, GraphPnode *gp, const ast::InVarnodeConditionsArray &arr
+) {
+  for (size_t i = 0; i < arr.array.size(); i++) {
+    pnodeTryAddInGhostNode(cntx, gp, i);
+  }
+};
+
+void PcodeGraph::addGhostNodesOpGraphNodeOut(
+    Context &cntx, GraphPnode *gp, const ast::OutVarnodeCondition &outCond
+) {
+  OpGraphNode *og = unpackGP(*gp).get();
+  if (og->edges.output != nullptr) {
+    return;
+  }
+
+  GraphVarnode *gv = std::visit(
+      util::overloaded{
+          [&](const ast::OutVarnodeConditionDefault &) {
+            return createGhostVarnode(
+                cntx, "_ghost_out_of_" + og->id.getName()
+            );
+          },
+          [&](const ast::OutVarnodeConditionNoOutOr &) {
+            return createGhostVarnode(
+                cntx, "_ghost_out_of_" + og->id.getName()
+            );
+          },
+          [&](const ast::OutVarnodeConditionNoOut &) {
+            return createGhostEmptyVarnode();
+          },
+      },
+      outCond
+  );
+
+  og->edges.output = gv;
+  getEdges(gv).def = gp;
+}
+
+void PcodeGraph::addGhostNodesOpGraphNode(Context &cntx, GraphPnode *gp) {
+  OpGraphNode *og = unpackGP(*gp).get();
+  if (og->isGhost || !og->opTp.has_value()) {
+    return;
+  }
+
+  const ast::OpType &opTp = og->opTp.value();
+  std::visit(
+      util::overloaded{
+          [&](const ast::InVarnodeConditionsArray &arr) {
+            addGhostNodesOpGraphNodeInArray(cntx, gp, arr);
+          },
+          [&](const ast::InVarnodeConditionsSpecial &spec) {
+            addGhostNodesOpGraphNodeInSpecial(cntx, gp, spec);
+          },
+      },
+      opTp.scheme.inVarnodeConds
+  );
+  addGhostNodesOpGraphNodeOut(cntx, gp, opTp.scheme.outVarnodeCond);
+}
+
+void PcodeGraph::addGhostNodesVarGraphNode(Context &cntx, GraphVarnode *gv) {
+  VarGraphNode *vg = get_if_uniq<VarGraphNode>(gv);
+  if (vg == nullptr || vg->isGhost || vg->edges.def.has_value()) {
+    return;
+  }
+
+  GraphPnode *gp = createGhostPnode(cntx, "_ghost_def_of_" + vg->id.getName());
+  OpGraphNode *og = unpackGP(*gp).get();
+  if (og->edges.output == nullptr) {
+    og->edges.output = gv;
+    vg->edges.def = gp;
+  }
+}
+
+void PcodeGraph::initGhostNodes(Context &cntx) {
+  std::vector<GraphVarnode *> userVarnodes;
+  std::vector<GraphPnode *> userPnodes;
+
+  for (const auto &[_, gv] : liveVarnodes()) {
+    if (!isGhost(gv)) {
+      userVarnodes.push_back(gv);
+    }
+  }
+  for (const auto &[_, gp] : livePnodes()) {
+    if (!isGhost(gp)) {
+      userPnodes.push_back(gp);
+    }
+  }
+
+  for (GraphVarnode *gv : userVarnodes) {
+    addGhostNodesVarGraphNode(cntx, gv);
+  }
+  for (GraphPnode *gp : userPnodes) {
+    addGhostNodesOpGraphNode(cntx, gp);
   }
 }
 

@@ -134,6 +134,9 @@ Errorable<void> Inferencer::inferenceVarnodeUserConds(
     const graph::GraphVarnode &gvn, CondVectType *conds
 ) {
   const graph::VarGraphNode *vg = get_if_uniq<graph::VarGraphNode>(&gvn);
+  if (vg == nullptr) {
+    return {};
+  }
 
   for (const auto &vt : vg->userTypes) {
     // don't change conditions then we add id first time
@@ -169,7 +172,10 @@ Errorable<void> Inferencer::inference(
   for (const auto &[id, nvg] : pgraph.newVarnodes) {
     graph::GraphVarnode *gn = pgraph.varnodes.at(id);
     for (const ast::Size &sz : nvg->specSizes) {
-      addSizeEqualSizeAndVarnode(sz, gn, conds);
+      res = addSizeEqualSizeAndVarnode(sz, gn, conds);
+      if (!res.has_value()) {
+        return res;
+      }
     }
   }
 

@@ -1,6 +1,9 @@
 #include "validate/action_pcodegraph.hh"
 #include "action_pcodegraph.hh"
 
+// this should be changed and replaced by special collection for inrefs
+static const size_t MAX_ARG_NEW_NODE = 256;
+
 namespace graph {
 
 Errorable<void> NewOpGraphNode::addSpec(const ast::PnodeSpecTypeAndLoc &spec) {
@@ -8,7 +11,7 @@ Errorable<void> NewOpGraphNode::addSpec(const ast::PnodeSpecTypeAndLoc &spec) {
     return err("Pnode " + this->id.getName() + " already specialised");
   }
 
-  this->opTp = spec.opType;
+  this->opTp = spec.opType; // will not update ids inside schema
   this->oldVarId = spec.oldVar.id;
   this->isInsertBefore = spec.isInsertBefore;
   return {};
@@ -16,18 +19,7 @@ Errorable<void> NewOpGraphNode::addSpec(const ast::PnodeSpecTypeAndLoc &spec) {
 
 Errorable<GraphVarnode *>
 ActionPcodeGraph::disconnectFromOutVarnode(GraphPnode *gp) {
-  // Maybe better to change all same checks to creating "ghost" nodes
-  //  and just work after with it as with common nodes.
-  // But it can create some side effects and need to think about it.
-
   const OpGraphNode &og = *unpackGP(*gp);
-  // Don't need to update if there isn't one
-  if (og.opTp.has_value() &&
-      std::holds_alternative<ast::OutVarnodeConditionNoOut>(
-          og.opTp.value().scheme.outVarnodeCond
-      )) {
-    return nullptr;
-  }
   if (og.edges.output != nullptr) {
     graph::getEdges(og.edges.output).def = nullptr;
     return og.edges.output;
@@ -49,7 +41,9 @@ ActionPcodeGraph::disconnectFromDefPnode(GraphVarnode *gvn) {
   if (vedges.def.has_value()) {
     GraphPnode *pdef = vedges.def.value();
     if (pdef != nullptr) {
-      unpackGP(*pdef)->edges.output = createEmptyGraphNode();
+      GraphVarnode *emptyTmp = createEmptyGraphNode();
+      unpackGP(*pdef)->edges.output = emptyTmp;
+      getEdges(emptyTmp).def = pdef;
     }
     return pdef;
   }
@@ -70,10 +64,12 @@ Errorable<void> ActionPcodeGraph::deletePnode(GraphPnode *gp) {
   if (!disRes.has_value()) {
     return std::unexpected(disRes.error());
   }
+  og.edges.output = nullptr;
 
   for (const auto &[_argNum, gv] : og.edges.inrefs) {
     getEdges(gv).eraseFromDescend(gp);
   }
+  og.edges.inrefs.clear();
 
   og.deleted = true;
 
@@ -86,6 +82,7 @@ GraphVarnode *ActionPcodeGraph::findOrCreateVarnode(const ast::Id &id) {
     return it->second;
   } else {
     NewVarGraphNode vgn(id);
+    vgn.edges.def = nullptr;
 
     varnodes[id] = uniqAddToNodes<GraphVarnode>(vgn);
     NewVarGraphNode *castRes = dynamic_cast<NewVarGraphNode *>(
@@ -106,12 +103,23 @@ GraphPnode *ActionPcodeGraph::findOrCreatePnode(const ast::Id &id) {
     NewOpGraphNode pn(id);
 
     pnodes[id] = uniqAddToNodes<GraphPnode>(pn);
+    GraphPnode *res = pnodes[id];
     NewOpGraphNode *castRes =
-        dynamic_cast<NewOpGraphNode *>(unpackGP(*pnodes[id]).get());
+        dynamic_cast<NewOpGraphNode *>(unpackGP(*res).get());
     assert(castRes != nullptr);
-
     newPnodes[id] = castRes;
-    return pnodes[id];
+
+    GraphVarnode *tmpEmpty = createEmptyGraphNode();
+    VarnodeEdges &tmpEmptyEdges = getEdges(tmpEmpty);
+
+    for (size_t i = 0; i < MAX_ARG_NEW_NODE; i++) {
+      castRes->edges.inrefs[i] = tmpEmpty;
+      tmpEmptyEdges.descend.push_back(res);
+    }
+    castRes->edges.output = tmpEmpty;
+    tmpEmptyEdges.def = res;
+
+    return res;
   }
 }
 
@@ -200,11 +208,17 @@ ActionPcodeGraph::addVarnodeAction(const ast::VarnodeAction &va) {
             }
             GraphVarnode *gv = resvat.value();
 
-            disconnectFromOutVarnode(gp);
+            auto pres = disconnectFromOutVarnode(gp);
             unpackGP(*gp)->edges.output = gv;
+            if (!pres.has_value()) {
+              return std::unexpected(pres.error());
+            }
 
-            disconnectFromDefPnode(gv);
+            auto vres = disconnectFromDefPnode(gv);
             getEdges(gv).def = gp;
+            if (!vres.has_value()) {
+              return std::unexpected(vres.error());
+            }
 
             return gv;
           }
@@ -314,6 +328,7 @@ Errorable<void> ActionPcodeGraph::validateNewPnode(const NewOpGraphNode &node) {
         "New pnode " + node.id.getName() + " isn't specialized (OpType not set)"
     );
   }
+
   return {};
 };
 

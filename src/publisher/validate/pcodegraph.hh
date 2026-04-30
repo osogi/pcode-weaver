@@ -28,31 +28,35 @@ struct VarnodeEdges {
   VarnodeEdges() : def(std::nullopt), descend() {};
 
   void eraseFromDescend(GraphPnode *gp) {
-    descend.erase(std::find(descend.begin(), descend.end(), gp));
+    auto it = std::find(descend.begin(), descend.end(), gp);
+    assert(it != descend.end());
+    descend.erase(it);
   };
 };
 
 struct VarGraphNode {
   const ast::Id id;
-
   std::vector<ast::VarnodeType> userTypes;
-
   VarnodeEdges edges;
+  bool isGhost = false;
+
   VarGraphNode(const ast::Id &_id) : id(_id), userTypes(0), edges() {};
   virtual ~VarGraphNode() {}
 };
 
 struct ConstGraphNode {
   const ast::VarnodeConst origVarnode;
-
   VarnodeEdges edges;
+  bool isGhost = false;
+
   ConstGraphNode(const ast::VarnodeConst &vn) : origVarnode(vn), edges() {}
 };
 
 struct EmptyGraphNode {
   const ast::VarnodeEmpty origVarnode;
-
   VarnodeEdges edges;
+  bool isGhost = false;
+
   EmptyGraphNode(const ast::VarnodeEmpty &vn) : origVarnode(vn), edges() {}
 };
 
@@ -62,6 +66,8 @@ using GraphVarnode =
 VarnodeEdges &getEdges(GraphVarnode *gv);
 std::string toStr(const GraphVarnode *gv);
 bool isEmpty(const GraphVarnode *gv);
+bool isDeleted(const GraphVarnode &x);
+bool &isGhost(GraphVarnode *gv);
 
 // Pnodes
 struct PnodeEdges {
@@ -70,14 +76,14 @@ struct PnodeEdges {
   GraphVarnode *output; //< The one possible output Varnode of this op
 
   // For InVarnodeConditionsSpecial
-  size_t maxAgrNumPattern;
-  size_t maxAgrNumAction;
+  int32_t maxAgrNumPattern;
+  int32_t maxAgrNumAction;
 
   PnodeEdges()
       : output(nullptr), maxAgrNumPattern(0),
         maxAgrNumAction(maxAgrNumPattern) {};
 
-  size_t updateMaxArgNum(bool onlyAction);
+  int32_t updateMaxArgNum(bool onlyAction);
 };
 
 struct OpGraphNode {
@@ -88,16 +94,17 @@ struct OpGraphNode {
 
   PnodeEdges edges;
   bool deleted;
+  bool isGhost = false;
 
   OpGraphNode(const ast::Id &_id)
       : id(_id), opTp(std::nullopt), userBbs(0), edges(), deleted(false) {}
   virtual ~OpGraphNode() {}
 };
+bool isDeleted(const GraphPnode &x);
+bool &isGhost(GraphPnode *x);
 
 using GraphNode = std::variant<GraphVarnode, GraphPnode>;
 
-bool isDeleted(const GraphVarnode &x);
-bool isDeleted(const GraphPnode &x);
 bool isDeleted(const GraphNode &gn);
 
 // a <= b
@@ -154,6 +161,23 @@ protected:
   const ast::BasicBlockVar &addBBPattern(const ast::BasicBlockPattern &bbp);
   Errorable<void> addPattern(const ast::RulePattern &p);
 
+  GraphVarnode *createGhostVarnode(Context &cntx, const std::string &nameHint);
+  GraphVarnode *createGhostEmptyVarnode();
+  GraphPnode *createGhostPnode(Context &cntx, const std::string &nameHint);
+
+  void pnodeTryAddInGhostNode(Context &cntx, GraphPnode *gp, size_t argNum);
+  void addGhostNodesOpGraphNodeInSpecial(
+      Context &cntx, GraphPnode *gp, const ast::InVarnodeConditionsSpecial &spec
+  );
+  void addGhostNodesOpGraphNodeInArray(
+      Context &cntx, GraphPnode *gp, const ast::InVarnodeConditionsArray &arr
+  );
+  void addGhostNodesOpGraphNodeOut(
+      Context &cntx, GraphPnode *gp, const ast::OutVarnodeCondition &outCond
+  );
+  void addGhostNodesOpGraphNode(Context &cntx, GraphPnode *gp);
+  void addGhostNodesVarGraphNode(Context &cntx, GraphVarnode *gv);
+
 public:
   PcodeGraph() = default;
   PcodeGraph(const std::vector<ast::RulePattern> &pats) : PcodeGraph() {
@@ -162,6 +186,7 @@ public:
   };
 
   Errorable<void> addPatterns(const std::vector<ast::RulePattern> &ps);
+  void initGhostNodes(Context &cntx);
   Errorable<void> validate();
   void updateMaxArgForPnodes(bool patternStep);
 

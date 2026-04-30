@@ -63,7 +63,6 @@ std::unordered_map<OpTypeToken, OpType> defaultOpType = {
 
 
 Errorable<OpType> OpTypeFactory::getOpType(OpTypeToken token) {
-  counter++;
   auto res = name2tp.find(token);
   if (res != name2tp.end()) {
     return alphaUpdate(res->second);
@@ -73,6 +72,8 @@ Errorable<OpType> OpTypeFactory::getOpType(OpTypeToken token) {
 }
 
 OpType OpTypeFactory::alphaUpdate(const OpType &old) {
+  counter++;
+
   return OpType{
       .opName = old.opName,
       .scheme = alphaUpdate(old.scheme),

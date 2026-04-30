@@ -7,8 +7,11 @@ Errorable<void> ValidateDriver::validate(const ast::Rule &rule) {
     return err("Build Pattern Graph: " + resPatGraphBuild.error().message());
   }
   pgraph.updateMaxArgForPnodes(true);
+  pgraph.initGhostNodes(cntx);
+
   actgraph = graph::ActionPcodeGraph(rule.patterns);
   getActgraph().updateMaxArgForPnodes(true);
+  getActgraph().initGhostNodes(cntx);
 
   auto resPatGraphValidate = pgraph.validate();
   if (!resPatGraphValidate.has_value()) {
@@ -51,7 +54,8 @@ Errorable<void> ValidateDriver::validate(const ast::Rule &rule) {
     );
   }
 
-  auto resActGraphInference = inferencer.inference(getActgraph(), &requiredConditions);
+  auto resActGraphInference =
+      inferencer.inference(getActgraph(), &requiredConditions);
   if (!resActGraphInference.has_value()) {
     return err(
         "Inference Action Graph: " + resActGraphInference.error().message()
