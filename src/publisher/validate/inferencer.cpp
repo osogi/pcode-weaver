@@ -65,8 +65,17 @@ Inferencer::inferencePnode(const graph::GraphPnode &gp, CondVectType *conds) {
             [&](const ast::InVarnodeConditionsArray &arr) -> Errorable<void> {
               for (size_t i = 0; i < arr.array.size(); i++) {
                 if (og.edges.inrefs.contains(i)) {
+                  const ast::Size &opCnd = arr.array[i].size;
+                  const ast::Id *opCndId = std::get_if<ast::Id>(&opCnd);
+
+                  // don't add to condition if there isn't corresponding id
+                  auto tmpConds = conds;
+                  if (opCndId != nullptr && !sizeSolver.contains(*opCndId)) {
+                    tmpConds = nullptr;
+                  }
+
                   auto inres = addSizeEqualSizeAndVarnode(
-                      arr.array[i].size, og.edges.inrefs.at(i), conds
+                      opCnd, og.edges.inrefs.at(i), tmpConds
                   );
                   if (!inres.has_value()) {
                     return inres;
@@ -81,11 +90,22 @@ Inferencer::inferencePnode(const graph::GraphPnode &gp, CondVectType *conds) {
         },
         freeOpTp.scheme.inVarnodeConds
     );
+    if (!res.has_value()) {
+      return res;
+    }
 
     const ast::Size *outSize = getSizeOutCond(freeOpTp.scheme.outVarnodeCond);
     if (outSize != nullptr) {
       if (og.edges.output != nullptr) {
-        addSizeEqualSizeAndVarnode(*outSize, og.edges.output, conds);
+
+        const ast::Id *opCndId = std::get_if<ast::Id>(outSize);
+
+        // don't add to condition if there isn't corresponding id
+        auto tmpConds = conds;
+        if (opCndId != nullptr && !sizeSolver.contains(*opCndId)) {
+          tmpConds = nullptr;
+        }
+        addSizeEqualSizeAndVarnode(*outSize, og.edges.output, tmpConds);
       }
     }
   }
