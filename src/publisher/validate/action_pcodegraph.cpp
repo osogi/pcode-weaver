@@ -76,6 +76,23 @@ Errorable<void> ActionPcodeGraph::deletePnode(GraphPnode *gp) {
   return {};
 };
 
+Errorable<GraphPnode *>
+ActionPcodeGraph::validateExistingPnodeActionTarget(GraphPnode *gp) {
+  const OpGraphNode &og = *unpackGP(*gp);
+  if (newPnodes.contains(og.id)) {
+    return gp;
+  }
+
+  if (!og.opTp.has_value()) {
+    return err(
+        "Action cannot operate on pnode " + og.id.getName() +
+        " because its operation type is undefined"
+    );
+  }
+
+  return gp;
+}
+
 GraphVarnode *ActionPcodeGraph::findOrCreateVarnode(const ast::Id &id) {
   auto it = varnodes.find(id);
   if (it != varnodes.end()) {
@@ -159,7 +176,13 @@ Errorable<GraphPnode *>
 ActionPcodeGraph::addPnodeActionTerm(const ast::PnodeActionTerm &pt) {
   return std::visit(
       util::overloaded{
-          [this](const ast::PnodeVar &x) { return addPnodeTerm(x); },
+          [this](const ast::PnodeVar &x) {
+            return addPnodeTerm(x).and_then(
+                [this](GraphPnode *gp) -> Errorable<GraphPnode *> {
+                  return validateExistingPnodeActionTarget(gp);
+                }
+            );
+          },
           [this](const ast::PnodeSpecTypeAndLoc &spec)
               -> Errorable<GraphPnode *> {
             auto res = addPnodeTerm(spec.newVar);

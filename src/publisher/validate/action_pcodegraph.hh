@@ -30,6 +30,7 @@ protected:
 
   Errorable<GraphPnode *> disconnectFromDefPnode(GraphVarnode *gvn);
   Errorable<void> deletePnode(GraphPnode *gp);
+  Errorable<GraphPnode *> validateExistingPnodeActionTarget(GraphPnode *gp);
 
   GraphVarnode *findOrCreateVarnode(const ast::Id &id) override;
   GraphPnode *findOrCreatePnode(const ast::Id &id) override;
