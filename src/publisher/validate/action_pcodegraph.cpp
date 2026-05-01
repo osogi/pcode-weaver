@@ -310,11 +310,12 @@ Errorable<void> ActionPcodeGraph::addAction(const ast::RuleAction &act) {
 Errorable<void>
 ActionPcodeGraph::addActions(const std::vector<ast::RuleAction> &acts) {
   for (const ast::RuleAction &act : acts) {
-    auto res = addAction(act);
+    Errorable<void> res = addAction(act);
     if (!res.has_value()) {
       return res;
     }
   }
+
   return {};
 };
 

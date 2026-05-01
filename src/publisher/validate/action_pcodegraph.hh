@@ -47,8 +47,7 @@ protected:
   Errorable<void> validateNewPnode(const NewOpGraphNode &node);
 
 public:
-  ActionPcodeGraph(const std::vector<ast::RulePattern> &pats)
-      : PcodeGraph(pats) {};
+  ActionPcodeGraph(const PcodeGraph &base) : PcodeGraph(base) {};
 
   Errorable<void> addActions(const std::vector<ast::RuleAction> &acts);
   Errorable<void> validate();

@@ -9,9 +9,7 @@ Errorable<void> ValidateDriver::validate(const ast::Rule &rule) {
   pgraph.updateMaxArgForPnodes(true);
   pgraph.initGhostNodes(cntx);
 
-  actgraph = graph::ActionPcodeGraph(rule.patterns);
-  getActgraph().updateMaxArgForPnodes(true);
-  getActgraph().initGhostNodes(cntx);
+  actgraph.emplace(pgraph);
 
   auto resPatGraphValidate = pgraph.validate();
   if (!resPatGraphValidate.has_value()) {

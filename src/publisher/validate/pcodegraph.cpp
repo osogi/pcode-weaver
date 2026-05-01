@@ -14,6 +14,23 @@ VarnodeEdges &getEdges(GraphVarnode *gv) {
   );
 }
 
+const VarnodeEdges &getEdges(const GraphVarnode *gv) {
+  return std::visit(
+      util::overloaded{
+          [](const unq<VarGraphNode> &v) -> const VarnodeEdges & {
+            return v->edges;
+          },
+          [](const unq<ConstGraphNode> &v) -> const VarnodeEdges & {
+            return v->edges;
+          },
+          [](const unq<EmptyGraphNode> &v) -> const VarnodeEdges & {
+            return v->edges;
+          },
+      },
+      *gv
+  );
+}
+
 std::string toStr(const GraphVarnode *gv) {
   return std::visit(
       util::overloaded{
@@ -73,6 +90,91 @@ bool &isGhost(GraphVarnode *gv) {
 }
 
 bool &isGhost(GraphPnode *gp) { return unpackGP(*gp)->isGhost; }
+
+PcodeGraph::PcodeGraph(const PcodeGraph &other)
+    : nodes(), varnodes(), pnodes(), bbUserConditions(other.bbUserConditions) {
+  std::unordered_map<const GraphVarnode *, GraphVarnode *> varnodeCopies;
+  std::unordered_map<const GraphPnode *, GraphPnode *> pnodeCopies;
+
+  for (const unq<GraphNode> &oldNode : other.nodes) {
+    std::visit(
+        util::overloaded{
+            [&](const GraphVarnode &oldVarnode) {
+              GraphVarnode *newVarnode = std::visit(
+                  util::overloaded{
+                      [&](const unq<VarGraphNode> &node) {
+                        return uniqAddToNodes<GraphVarnode>(*node);
+                      },
+                      [&](const unq<ConstGraphNode> &node) {
+                        return uniqAddToNodes<GraphVarnode>(*node);
+                      },
+                      [&](const unq<EmptyGraphNode> &node) {
+                        return uniqAddToNodes<GraphVarnode>(*node);
+                      },
+                  },
+                  oldVarnode
+              );
+              varnodeCopies[&oldVarnode] = newVarnode;
+            },
+            [&](const GraphPnode &oldPnode) {
+              GraphPnode *newPnode =
+                  uniqAddToNodes<GraphPnode>(*unpackGP(oldPnode));
+              pnodeCopies[&oldPnode] = newPnode;
+            },
+        },
+        *oldNode
+    );
+  }
+
+  for (const auto &[id, oldVarnode] : other.varnodes) {
+    varnodes[id] = varnodeCopies.at(oldVarnode);
+  }
+  for (const auto &[id, oldPnode] : other.pnodes) {
+    pnodes[id] = pnodeCopies.at(oldPnode);
+  }
+
+  auto remapVarnode = [&](GraphVarnode *oldVarnode) -> GraphVarnode * {
+    return oldVarnode == nullptr ? nullptr : varnodeCopies.at(oldVarnode);
+  };
+  auto remapPnode = [&](GraphPnode *oldPnode) -> GraphPnode * {
+    return oldPnode == nullptr ? nullptr : pnodeCopies.at(oldPnode);
+  };
+
+  for (const unq<GraphNode> &oldNode : other.nodes) {
+    std::visit(
+        util::overloaded{
+            [&](const GraphVarnode &oldVarnode) {
+              GraphVarnode *newVarnode = varnodeCopies.at(&oldVarnode);
+              VarnodeEdges &newEdges = getEdges(newVarnode);
+              const VarnodeEdges &oldEdges = getEdges(&oldVarnode);
+
+              if (oldEdges.def.has_value()) {
+                newEdges.def = remapPnode(oldEdges.def.value());
+              } else {
+                newEdges.def = std::nullopt;
+              }
+
+              newEdges.descend.clear();
+              for (GraphPnode *oldDescend : oldEdges.descend) {
+                newEdges.descend.push_back(remapPnode(oldDescend));
+              }
+            },
+            [&](const GraphPnode &oldPnode) {
+              GraphPnode *newPnode = pnodeCopies.at(&oldPnode);
+              PnodeEdges &newEdges = unpackGP(*newPnode)->edges;
+              const PnodeEdges &oldEdges = unpackGP(oldPnode)->edges;
+
+              newEdges.output = remapVarnode(oldEdges.output);
+              newEdges.inrefs.clear();
+              for (const auto &[argNum, oldVarnode] : oldEdges.inrefs) {
+                newEdges.inrefs[argNum] = remapVarnode(oldVarnode);
+              }
+            },
+        },
+        *oldNode
+    );
+  }
+}
 
 // returns the guaranteed VarGraphNode
 GraphVarnode *PcodeGraph::findOrCreateVarnode(const ast::Id &id) {

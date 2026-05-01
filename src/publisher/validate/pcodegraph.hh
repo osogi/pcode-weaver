@@ -5,6 +5,7 @@
 
 #include <list>
 #include <ranges>
+#include <unordered_map>
 
 namespace infer {
 class Inferencer; // forward decl
@@ -64,6 +65,7 @@ using GraphVarnode =
     std::variant<unq<VarGraphNode>, unq<ConstGraphNode>, unq<EmptyGraphNode>>;
 
 VarnodeEdges &getEdges(GraphVarnode *gv);
+const VarnodeEdges &getEdges(const GraphVarnode *gv);
 std::string toStr(const GraphVarnode *gv);
 bool isEmpty(const GraphVarnode *gv);
 bool isDeleted(const GraphVarnode &x);
@@ -126,6 +128,10 @@ class PcodeGraph {
   friend class infer::Inferencer;
 
 protected:
+  PcodeGraph(const PcodeGraph &other);
+  PcodeGraph(PcodeGraph &&other) noexcept = default;
+  PcodeGraph &operator=(PcodeGraph &&other) noexcept = default;
+
   template <class RetPtrType, class NodeType>
   RetPtrType *uniqAddToNodes(NodeType x) {
     GraphNode gn = std::make_unique<NodeType>(x);
@@ -180,6 +186,8 @@ protected:
 
 public:
   PcodeGraph() = default;
+  PcodeGraph &operator=(const PcodeGraph &other) = delete;
+
   PcodeGraph(const std::vector<ast::RulePattern> &pats) : PcodeGraph() {
     auto res = addPatterns(pats);
     assert(res.has_value());
