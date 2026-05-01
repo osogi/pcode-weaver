@@ -1,7 +1,7 @@
 #pragma once
 
-#include "validate/pcodegraph.hh"
 #include "validate/action_pcodegraph.hh"
+#include "validate/pcodegraph.hh"
 #include "validate/solvers.hh"
 #include "validate/specconditions.hh"
 
@@ -67,8 +67,9 @@ protected:
     }
     static Errorable<void>
     addToSolver(SolverType &s, const Term &a, const Term &b) {
-      s.addLessOrEqual(a, b);
-      return {};
+      return s.addLessOrEqual(a, b).and_then([](bool) {
+        return Errorable<void>{};
+      });
     }
   };
 
@@ -93,40 +94,32 @@ protected:
     }
     return Policy::addToSolver(solver, a, b);
   }
-
   Errorable<void> addSizeEqual(
       const solvers::SizeTerm &a, const solvers::SizeTerm &b,
       CondVectType *conds
   ) {
     return addRelation<SizeEqualPolicy>(sizeSolver, a, b, conds);
   }
-
   Errorable<void> addBBEqual(
       const solvers::BBTerm &a, const solvers::BBTerm &b, CondVectType *conds
   ) {
     return addRelation<BBEqualPolicy>(bbSolver, a, b, conds);
   }
-
   Errorable<void> addBBDominate(
       const solvers::BBTerm &a, const solvers::BBTerm &b, CondVectType *conds
   ) {
     return addRelation<BBDominatePolicy>(bbSolver, a, b, conds);
   }
-
   Errorable<void> addSizeEqualSizeAndVarnode(
       const ast::Size &sz, const graph::GraphVarnode *gvn, CondVectType *conds
   );
-
   Errorable<void>
   inferenceVarnode(const graph::GraphVarnode &gvn, CondVectType *conds);
-
   Errorable<void>
   inferencePnode(const graph::GraphPnode &gvn, CondVectType *conds);
-
   Errorable<void> inferenceVarnodeUserConds(
       const graph::GraphVarnode &gvn, CondVectType *conds
   );
-
   Errorable<void>
   inferencePnodeUserConds(const graph::GraphPnode &gvn, CondVectType *conds);
 
@@ -135,14 +128,14 @@ public:
       Context &_context, const graph::PcodeGraph &_graph,
       solvers::SizeSolver &_sizeSolver, solvers::BBSolver &_bbSolver
   )
-      : cntx(_context), sizeSolver(_sizeSolver),
-        bbSolver(_bbSolver) {}
-
-  Errorable<void> inference(const graph::PcodeGraph& pgraph, CondVectType *conds = nullptr);
-
-  Errorable<void> inference(const graph::ActionPcodeGraph& pgraph, CondVectType *conds = nullptr);
-
-
-  Errorable<void> inferenceUserConds(const graph::PcodeGraph& pgraph, CondVectType *conds = nullptr);
+      : cntx(_context), sizeSolver(_sizeSolver), bbSolver(_bbSolver) {}
+  Errorable<void>
+  inference(const graph::PcodeGraph &pgraph, CondVectType *conds = nullptr);
+  Errorable<void> inference(
+      const graph::ActionPcodeGraph &pgraph, CondVectType *conds = nullptr
+  );
+  Errorable<void> inferenceUserConds(
+      const graph::PcodeGraph &pgraph, CondVectType *conds = nullptr
+  );
 };
 } // namespace infer

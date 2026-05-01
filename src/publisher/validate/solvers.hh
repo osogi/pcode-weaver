@@ -19,7 +19,6 @@ namespace solvers {
 template <typename TermType> class EqualitySolver {
 protected:
   std::unordered_map<TermType, TermType> parent;
-
   virtual Errorable<void> unite(const TermType &x, const TermType &y) = 0;
 
 public:
@@ -93,7 +92,6 @@ protected:
   std::unordered_map<BBTerm, std::unordered_set<BBTerm>> lessEdges;
   // reverse edges for upward traversal: b >= a
   std::unordered_map<BBTerm, std::unordered_set<BBTerm>> greaterEdges;
-
   Errorable<void> unite(const BBTerm &x, const BBTerm &y) override;
 
   // Call this after two representatives rx, ry are merged into newRep
@@ -103,7 +101,7 @@ protected:
   // Returns true if `from` can reach `to` via ≤ edges
   bool canReach(const BBTerm &from, const BBTerm &to);
 
-  void collapsePath(const BBTerm &source, const BBTerm &target);
+  Errorable<void> collapsePath(const BBTerm &source, const BBTerm &target);
 
 public:
   /// @brief Add inequality: a ≤ b
@@ -112,7 +110,6 @@ public:
 
   /// @brief Check if a ≤ b (directly or transitively via equalities)
   bool isLessOrEqual(BBTerm a, BBTerm b);
-
   Errorable<bool> addEquation(const BBTerm &left, const BBTerm &right);
 };
 std::ostream &operator<<(std::ostream &os, const SizeTerm &term);

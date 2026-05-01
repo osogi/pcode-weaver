@@ -4,7 +4,6 @@
 using graph::unq;
 
 namespace infer {
-
 Errorable<void> Inferencer::inferenceVarnode(
     const graph::GraphVarnode &gvn, CondVectType *conds
 ) {
@@ -20,7 +19,6 @@ Errorable<void> Inferencer::inferenceVarnode(
   }
   return {};
 }
-
 Errorable<void> Inferencer::addSizeEqualSizeAndVarnode(
     const ast::Size &sz, const graph::GraphVarnode *gvn, CondVectType *conds
 ) {
@@ -39,7 +37,6 @@ Errorable<void> Inferencer::addSizeEqualSizeAndVarnode(
   }
   return {};
 }
-
 Errorable<void>
 Inferencer::inferencePnode(const graph::GraphPnode &gp, CondVectType *conds) {
 
@@ -105,13 +102,16 @@ Inferencer::inferencePnode(const graph::GraphPnode &gp, CondVectType *conds) {
         if (opCndId != nullptr && !sizeSolver.contains(*opCndId)) {
           tmpConds = nullptr;
         }
-        addSizeEqualSizeAndVarnode(*outSize, og.edges.output, tmpConds);
+        auto outRes =
+            addSizeEqualSizeAndVarnode(*outSize, og.edges.output, tmpConds);
+        if (!outRes.has_value()) {
+          return outRes;
+        }
       }
     }
   }
   return {};
 }
-
 Errorable<void>
 Inferencer::inference(const graph::PcodeGraph &pgraph, CondVectType *conds) {
   for (const auto &gn : pgraph.liveNodes()) {
@@ -132,7 +132,6 @@ Inferencer::inference(const graph::PcodeGraph &pgraph, CondVectType *conds) {
   }
   return {};
 }
-
 Errorable<void> Inferencer::inferencePnodeUserConds(
     const graph::GraphPnode &gp, CondVectType *conds
 ) {
@@ -149,7 +148,6 @@ Errorable<void> Inferencer::inferencePnodeUserConds(
   }
   return {};
 }
-
 Errorable<void> Inferencer::inferenceVarnodeUserConds(
     const graph::GraphVarnode &gvn, CondVectType *conds
 ) {
@@ -180,7 +178,6 @@ Errorable<void> Inferencer::inferenceVarnodeUserConds(
   }
   return {};
 }
-
 Errorable<void> Inferencer::inference(
     const graph::ActionPcodeGraph &pgraph, CondVectType *conds
 ) {
@@ -201,7 +198,6 @@ Errorable<void> Inferencer::inference(
 
   return {};
 }
-
 Errorable<void> Inferencer::inferenceUserConds(
     const graph::PcodeGraph &pgraph, CondVectType *conds
 ) {
@@ -224,7 +220,10 @@ Errorable<void> Inferencer::inferenceUserConds(
   }
 
   for (const auto &bbc : pgraph.bbUserConditions) {
-    addBBDominate(bbc.a.id, bbc.b.id, conds);
+    auto res = addBBDominate(bbc.a.id, bbc.b.id, conds);
+    if (!res.has_value()) {
+      return res;
+    }
   }
 
   return {};

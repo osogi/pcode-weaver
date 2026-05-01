@@ -233,7 +233,6 @@ Errorable<void> PcodeGraph::validateVarnode(const GraphVarnode &gvn) {
       gvn
   );
 }
-
 Errorable<void> PcodeGraph::validatePnodeInSpecial(
     const OpGraphNode &og, const ast::InVarnodeConditionsSpecial &spec
 ) {
@@ -301,7 +300,6 @@ Errorable<void> PcodeGraph::validatePnodeInSpecial(
 
   return {};
 }
-
 Errorable<void> PcodeGraph::validatePnodeInArray(
     const OpGraphNode &og, const ast::InVarnodeConditionsArray &arr
 ) {
@@ -325,7 +323,6 @@ Errorable<void> PcodeGraph::validatePnodeInArray(
   }
   return {};
 }
-
 Errorable<void> PcodeGraph::validatePnodeOut(
     const OpGraphNode &og, const ast::OutVarnodeCondition &outCond
 ) {
@@ -345,7 +342,6 @@ Errorable<void> PcodeGraph::validatePnodeOut(
   }
   return {};
 }
-
 Errorable<void> PcodeGraph::validatePnode(const GraphPnode &gpn) {
   const OpGraphNode &og = *unpackGP(gpn);
   if (og.opTp.has_value()) {
@@ -397,7 +393,6 @@ GraphVarnode *PcodeGraph::addVarnodeTerm(const ast::VarnodeTerm &vt) {
       vt
   );
 }
-
 Errorable<GraphPnode *> PcodeGraph::addPnodeTerm(const ast::PnodeTerm &pt) {
   return std::visit(
       util::overloaded{
@@ -425,7 +420,6 @@ Errorable<GraphPnode *> PcodeGraph::addPnodeTerm(const ast::PnodeTerm &pt) {
       pt
   );
 }
-
 Errorable<GraphVarnode *>
 PcodeGraph::addVarnodePattern(const ast::VarnodePattern &vp) {
   return std::visit(
@@ -468,7 +462,6 @@ PcodeGraph::addVarnodePattern(const ast::VarnodePattern &vp) {
       vp
   );
 }
-
 Errorable<GraphPnode *>
 PcodeGraph::addPnodePattern(const ast::PnodePattern &pp) {
   return std::visit(
@@ -522,7 +515,6 @@ PcodeGraph::addBBPattern(const ast::BasicBlockPattern &bbp) {
       bbp
   );
 }
-
 Errorable<void> PcodeGraph::addPattern(const ast::RulePattern &p) {
   return std::visit(
       util::overloaded{
@@ -560,7 +552,6 @@ PcodeGraph::addPatterns(const std::vector<ast::RulePattern> &ps) {
   }
   return {};
 }
-
 Errorable<void> PcodeGraph::validate() {
   for (const auto &gn : liveNodes()) {
     Errorable<void> res = std::visit(

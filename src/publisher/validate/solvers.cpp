@@ -2,7 +2,6 @@
 #include "parse/ast_print.hh"
 
 namespace solvers {
-
 Errorable<void> SizeSolver::unite(const SizeTerm &x, const SizeTerm &y) {
   SizeTerm root_x = find(x);
   SizeTerm root_y = find(y);
@@ -32,7 +31,6 @@ Errorable<void> SizeSolver::unite(const SizeTerm &x, const SizeTerm &y) {
   }
   return {};
 }
-
 Errorable<void> BBSolver::unite(const BBTerm &x, const BBTerm &y) {
   BBTerm root_x = find(x);
   BBTerm root_y = find(y);
@@ -125,7 +123,8 @@ bool BBSolver::canReach(const BBTerm &from, const BBTerm &to) {
 }
 
 // Collapses all nodes 'v' such that (source <= v <= target)
-void BBSolver::collapsePath(const BBTerm &source, const BBTerm &target) {
+Errorable<void>
+BBSolver::collapsePath(const BBTerm &source, const BBTerm &target) {
   BBTerm rTarget = find(target);
   BBTerm rSource = find(source);
 
@@ -157,9 +156,13 @@ void BBSolver::collapsePath(const BBTerm &source, const BBTerm &target) {
   }
 
   for (BBTerm node : cycleNodes) {
-    unite(rTarget, node);
+    auto res = unite(rTarget, node);
+    if (!res.has_value()) {
+      return res;
+    }
     rTarget = find(rTarget);
   }
+  return {};
 }
 
 /// @brief Add inequality: a ≤ b
@@ -173,7 +176,10 @@ Errorable<bool> BBSolver::addLessOrEqual(BBTerm a, BBTerm b) {
 
   if (canReach(rb, ra)) {
     // Cycle detected! Collapse everything between rb and ra
-    collapsePath(rb, ra);
+    auto res = collapsePath(rb, ra);
+    if (!res.has_value()) {
+      return std::unexpected(res.error());
+    }
     return true;
   }
 
@@ -195,7 +201,6 @@ bool BBSolver::isLessOrEqual(BBTerm a, BBTerm b) {
   // Check reachability in DAG
   return canReach(ra, rb);
 }
-
 Errorable<bool> BBSolver::addEquation(const BBTerm &left, const BBTerm &right) {
   BBTerm rl = find(left);
   BBTerm rr = find(right);
@@ -206,15 +211,26 @@ Errorable<bool> BBSolver::addEquation(const BBTerm &left, const BBTerm &right) {
   // 1. If there's a path rl -> ... -> rr, collapse it
   if (canReach(rl, rr)) {
     // This is exactly the cycle logic from addLessOrEqual!
-    collapsePath(rl, rr); // Collapses everything on path from rl to rr
+    auto res =
+        collapsePath(rl, rr); // Collapses everything on path from rl to rr
+    if (!res.has_value()) {
+      return std::unexpected(res.error());
+    }
   }
   // 2. If there's a path rr -> ... -> rl, collapse it
   else if (canReach(rr, rl)) {
-    collapsePath(rr, rl); // Collapses everything on path from rr to rl
+    auto res =
+        collapsePath(rr, rl); // Collapses everything on path from rr to rl
+    if (!res.has_value()) {
+      return std::unexpected(res.error());
+    }
   }
 
   // 3. Finally, ensure the two actual endpoints are unified
-  unite(rl, rr);
+  auto res = unite(rl, rr);
+  if (!res.has_value()) {
+    return std::unexpected(res.error());
+  }
 
   return true;
 }

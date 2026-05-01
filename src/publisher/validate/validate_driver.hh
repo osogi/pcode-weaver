@@ -23,7 +23,6 @@ public:
   ValidateDriver(Context &_context)
       : pgraph(), actgraph(std::nullopt), sizesolver(), bbsolver(),
         cntx(_context), inferencer(cntx, pgraph, sizesolver, bbsolver) {};
-
   Errorable<void> validate(const ast::Rule &rule);
 
   const std::vector<speccond::SpecCondition> &getRTC() const;

@@ -5,7 +5,6 @@
 static const size_t MAX_ARG_NEW_NODE = 256;
 
 namespace graph {
-
 Errorable<void> NewOpGraphNode::addSpec(const ast::PnodeSpecTypeAndLoc &spec) {
   if (this->opTp.has_value()) {
     return err("Pnode " + this->id.getName() + " already specialised");
@@ -16,7 +15,6 @@ Errorable<void> NewOpGraphNode::addSpec(const ast::PnodeSpecTypeAndLoc &spec) {
   this->isInsertBefore = spec.isInsertBefore;
   return {};
 };
-
 Errorable<GraphVarnode *>
 ActionPcodeGraph::disconnectFromOutVarnode(GraphPnode *gp) {
   const OpGraphNode &og = *unpackGP(*gp);
@@ -34,7 +32,6 @@ ActionPcodeGraph::disconnectFromOutVarnode(GraphPnode *gp) {
 GraphVarnode *ActionPcodeGraph::createEmptyGraphNode() {
   return uniqAddToNodes<GraphVarnode>(EmptyGraphNode(ast::VarnodeEmpty{}));
 }
-
 Errorable<GraphPnode *>
 ActionPcodeGraph::disconnectFromDefPnode(GraphVarnode *gvn) {
   graph::VarnodeEdges &vedges = graph::getEdges(gvn);
@@ -52,7 +49,6 @@ ActionPcodeGraph::disconnectFromDefPnode(GraphVarnode *gvn) {
       "Varnode " + graph::toStr(gvn) + " should has explicit define pnode"
   );
 }
-
 Errorable<void> ActionPcodeGraph::deletePnode(GraphPnode *gp) {
   OpGraphNode &og = *unpackGP(*gp);
 
@@ -75,7 +71,6 @@ Errorable<void> ActionPcodeGraph::deletePnode(GraphPnode *gp) {
 
   return {};
 };
-
 Errorable<GraphPnode *>
 ActionPcodeGraph::validateExistingPnodeActionTarget(GraphPnode *gp) {
   const OpGraphNode &og = *unpackGP(*gp);
@@ -139,7 +134,6 @@ GraphPnode *ActionPcodeGraph::findOrCreatePnode(const ast::Id &id) {
     return res;
   }
 }
-
 Errorable<GraphVarnode *>
 ActionPcodeGraph::addVarnodeActionTerm(const ast::VarnodeActionTerm &vt) {
   return std::visit(
@@ -198,7 +192,10 @@ ActionPcodeGraph::addPnodeActionTerm(const ast::PnodeActionTerm &pt) {
                   spec.newVar.id.getName()
               );
             } else {
-              it->second->addSpec(spec);
+              auto specRes = it->second->addSpec(spec);
+              if (!specRes.has_value()) {
+                return std::unexpected(specRes.error());
+              }
             }
             return res;
           }
@@ -206,7 +203,6 @@ ActionPcodeGraph::addPnodeActionTerm(const ast::PnodeActionTerm &pt) {
       pt
   );
 };
-
 Errorable<GraphVarnode *>
 ActionPcodeGraph::addVarnodeAction(const ast::VarnodeAction &va) {
   return std::visit(
@@ -309,7 +305,6 @@ Errorable<void> ActionPcodeGraph::addEmptyAction(const ast::EmptyAction &ea) {
       ea
   );
 };
-
 Errorable<void> ActionPcodeGraph::addAction(const ast::RuleAction &act) {
   return std::visit(
       util::overloaded{
@@ -329,7 +324,6 @@ Errorable<void> ActionPcodeGraph::addAction(const ast::RuleAction &act) {
       act
   );
 };
-
 Errorable<void>
 ActionPcodeGraph::addActions(const std::vector<ast::RuleAction> &acts) {
   for (const ast::RuleAction &act : acts) {
@@ -341,7 +335,6 @@ ActionPcodeGraph::addActions(const std::vector<ast::RuleAction> &acts) {
 
   return {};
 };
-
 Errorable<void>
 ActionPcodeGraph::validateNewVarnode(const NewVarGraphNode &node) {
   return {};
@@ -355,7 +348,6 @@ Errorable<void> ActionPcodeGraph::validateNewPnode(const NewOpGraphNode &node) {
 
   return {};
 };
-
 Errorable<void> ActionPcodeGraph::validate() {
   auto res = PcodeGraph::validate();
   if (!res.has_value()) {

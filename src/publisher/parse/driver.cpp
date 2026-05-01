@@ -58,7 +58,6 @@ void Driver::error(const yy::location &loc, const std::string &message) {
   s << loc.begin.line << ':' << loc.begin.column << ": " << message;
   error(s.str());
 }
-
 Errorable<ast::OpType> Driver::getOpTypeByToken(OpTypeToken token) {
   return cntx.opTypePredefFactory.getOpType(token);
 };

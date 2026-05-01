@@ -146,7 +146,6 @@ protected:
   virtual GraphVarnode *findOrCreateVarnode(const ast::Id &id);
   // returns the guaranteed OpGraphNode
   virtual GraphPnode *findOrCreatePnode(const ast::Id &id);
-
   Errorable<void> validateVarnode(const GraphVarnode &gvn);
   Errorable<void> validatePnodeInSpecial(
       const OpGraphNode &og, const ast::InVarnodeConditionsSpecial &spec
@@ -161,7 +160,6 @@ protected:
 
   GraphVarnode *addVarnodeTerm(const ast::VarnodeTerm &vt);
   Errorable<GraphPnode *> addPnodeTerm(const ast::PnodeTerm &pt);
-
   Errorable<GraphVarnode *> addVarnodePattern(const ast::VarnodePattern &vp);
   Errorable<GraphPnode *> addPnodePattern(const ast::PnodePattern &pp);
   const ast::BasicBlockVar &addBBPattern(const ast::BasicBlockPattern &bbp);
@@ -192,7 +190,6 @@ public:
     auto res = addPatterns(pats);
     assert(res.has_value());
   };
-
   Errorable<void> addPatterns(const std::vector<ast::RulePattern> &ps);
   void initGhostNodes(Context &cntx);
   Errorable<void> validate();

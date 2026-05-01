@@ -35,11 +35,11 @@ InVarnodeConditions createInConds(const std::string &str) {
 }
 
 #define OP(token, inConds, outCond)                                            \
-  (std::pair<OpTypeToken, OpType>{                                   \
+  (std::pair<OpTypeToken, OpType>{                                             \
       yy::Parser::token_kind_type::RULES_TOKEN_##token,                        \
-      OpType{                                                        \
+      OpType{                                                                  \
           #token,                                                              \
-          OpTypeScheme{inConds, outCond, false},                              \
+          OpTypeScheme{inConds, outCond, false},                               \
           ghidra::OpCode::CPUI_##token                                         \
       }                                                                        \
   })
@@ -60,8 +60,6 @@ std::unordered_map<OpTypeToken, OpType> defaultOpType = {
     OP_DEFAULT(INT_ADD, STRVEC("a", "a"), "a"),
     OP_DEFAULT(INT_SUB, STRVEC("a", "a"), "a"),
 };
-
-
 Errorable<OpType> OpTypeFactory::getOpType(OpTypeToken token) {
   auto res = name2tp.find(token);
   if (res != name2tp.end()) {
@@ -89,8 +87,7 @@ OpTypeScheme OpTypeFactory::alphaUpdate(const OpTypeScheme &old) {
   };
 };
 
-InVarnodeConditions
-OpTypeFactory::alphaUpdate(const InVarnodeConditions &old) {
+InVarnodeConditions OpTypeFactory::alphaUpdate(const InVarnodeConditions &old) {
   return std::visit(
       util::overloaded{
           [this](const InVarnodeConditionsArray &cond) -> InVarnodeConditions {
@@ -116,8 +113,7 @@ OpTypeFactory::alphaUpdate(const InVarnodeConditionsArray &old) {
   };
 };
 
-InVarnodeCondition
-OpTypeFactory::alphaUpdate(const InVarnodeCondition &old) {
+InVarnodeCondition OpTypeFactory::alphaUpdate(const InVarnodeCondition &old) {
   return InVarnodeCondition{.size = alphaUpdate(old.size)};
 };
 
@@ -135,8 +131,7 @@ Id OpTypeFactory::alphaUpdate(const Id &old) {
   return sizeVarFactory.createId(genNewName(old.getName()), false);
 };
 
-OutVarnodeCondition
-OpTypeFactory::alphaUpdate(const OutVarnodeCondition &old) {
+OutVarnodeCondition OpTypeFactory::alphaUpdate(const OutVarnodeCondition &old) {
   return std::visit(
       util::overloaded{
           [this](const OutVarnodeConditionDefault &cond)

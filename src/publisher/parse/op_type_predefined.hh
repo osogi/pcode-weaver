@@ -18,7 +18,6 @@ public:
       ast::IdFactory &_sizeVarFactory
   )
       : name2tp(_name2tp), sizeVarFactory(_sizeVarFactory) {};
-
   Errorable<ast::OpType> getOpType(OpTypeToken token);
   ast::OpType alphaUpdate(const ast::OpType &old);
 

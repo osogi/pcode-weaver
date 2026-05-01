@@ -43,7 +43,6 @@ private:
   // print error msg
   void error(const std::string &message);
   void error(const yy::location &loc, const std::string &message);
-
   Errorable<ast::OpType> getOpTypeByToken(OpTypeToken token);
 
   // Set rule upon completion of parsing

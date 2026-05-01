@@ -1,5 +1,4 @@
 #include "validate/validate_driver.hh"
-
 Errorable<void> ValidateDriver::validate(const ast::Rule &rule) {
 
   auto resPatGraphBuild = pgraph.addPatterns(rule.patterns);
