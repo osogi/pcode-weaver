@@ -1,6 +1,7 @@
 #pragma once
 
 #include "validate/pcodegraph.hh"
+#include "validate/specconditions.hh"
 
 namespace graph {
 
@@ -46,6 +47,14 @@ public:
   ActionPcodeGraph(const PcodeGraph &base) : PcodeGraph(base) {};
   Errorable<void> addActions(const std::vector<ast::RuleAction> &acts);
   Errorable<void> validate();
+  bool isNewVarnode(const ast::Id &id) const;
+  bool isNewPnode(const ast::Id &id) const;
+  bool containsNewNodeValue(const specvalues::SpecValueSize &value) const;
+  bool containsNewNodeValue(const specvalues::SpecValueBB &value) const;
+  bool containsNewNodeValue(const speccond::SpecCondition &condition) const;
+  void removeConditionsWithNewNodes(
+      std::vector<speccond::SpecCondition> &conditions
+  ) const;
 
 protected:
   std::unordered_map<ast::Id, NewVarGraphNode *> newVarnodes;

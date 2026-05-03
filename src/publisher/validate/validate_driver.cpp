@@ -53,6 +53,8 @@ Errorable<void> ValidateDriver::validate(const ast::Rule &rule) {
 
   auto resActGraphInference =
       inferencer.inference(getActgraph(), &requiredConditions);
+  getActgraph().removeConditionsWithNewNodes(requiredConditions);
+
   if (!resActGraphInference.has_value()) {
     return err(
         "Inference Action Graph: " + resActGraphInference.error().message()

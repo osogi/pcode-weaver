@@ -369,4 +369,72 @@ Errorable<void> ActionPcodeGraph::validate() {
   return {};
 }
 
+bool ActionPcodeGraph::isNewVarnode(const ast::Id &id) const {
+  return newVarnodes.contains(id);
+}
+
+bool ActionPcodeGraph::isNewPnode(const ast::Id &id) const {
+  return newPnodes.contains(id);
+}
+
+bool ActionPcodeGraph::containsNewNodeValue(
+    const specvalues::SpecValueSize &value
+) const {
+  return std::visit(
+      util::overloaded{
+          [](const specvalues::ConcreateSize &) { return false; },
+          [this](const specvalues::SizeOfVarnode &value) {
+            return isNewVarnode(value.nodeId);
+          },
+      },
+      value
+  );
+}
+
+bool ActionPcodeGraph::containsNewNodeValue(
+    const specvalues::SpecValueBB &value
+) const {
+  return std::visit(
+      util::overloaded{
+          [this](const specvalues::BBOfPnode &value) {
+            return isNewPnode(value.nodeId);
+          },
+          [this](const specvalues::BBOfVarnode &value) {
+            return isNewVarnode(value.nodeId);
+          },
+      },
+      value
+  );
+}
+
+bool ActionPcodeGraph::containsNewNodeValue(
+    const speccond::SpecCondition &condition
+) const {
+  return std::visit(
+      util::overloaded{
+          [this](const speccond::SizeEqual &condition) {
+            return containsNewNodeValue(condition.a) ||
+                   containsNewNodeValue(condition.b);
+          },
+          [this](const speccond::BBEqual &condition) {
+            return containsNewNodeValue(condition.a) ||
+                   containsNewNodeValue(condition.b);
+          },
+          [this](const speccond::BBDominate &condition) {
+            return containsNewNodeValue(condition.a) ||
+                   containsNewNodeValue(condition.b);
+          },
+      },
+      condition
+  );
+}
+
+void ActionPcodeGraph::removeConditionsWithNewNodes(
+    std::vector<speccond::SpecCondition> &conditions
+) const {
+  std::erase_if(conditions, [this](const auto &condition) {
+    return containsNewNodeValue(condition);
+  });
+}
+
 }; // namespace graph
