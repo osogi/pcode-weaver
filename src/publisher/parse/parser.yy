@@ -83,8 +83,70 @@
 
 
 
+%token COPY
+%token LOAD
+%token STORE
+%token BRANCH
+%token CBRANCH
+%token BRANCHIND
+%token CALL
+%token CALLIND
+%token USERDEFINED
+%token RETURN
+%token PIECE
+%token SUBPIECE
+%token POPCOUNT
+%token LZCOUNT
+%token INT_EQUAL
+%token INT_NOTEQUAL
+%token INT_LESS
+%token INT_SLESS
+%token INT_LESSEQUAL
+%token INT_SLESSEQUAL
+%token INT_ZEXT
+%token INT_SEXT
 %token INT_ADD
 %token INT_SUB
+%token INT_CARRY
+%token INT_SCARRY
+%token INT_SBORROW
+%token INT_2COMP
+%token INT_NEGATE
+%token INT_XOR
+%token INT_AND
+%token INT_OR
+%token INT_LEFT
+%token INT_RIGHT
+%token INT_SRIGHT
+%token INT_MULT
+%token INT_DIV
+%token INT_REM
+%token INT_SDIV
+%token INT_SREM
+%token BOOL_NEGATE
+%token BOOL_XOR
+%token BOOL_AND
+%token BOOL_OR
+%token FLOAT_EQUAL
+%token FLOAT_NOTEQUAL
+%token FLOAT_LESS
+%token FLOAT_LESSEQUAL
+%token FLOAT_NAN
+%token FLOAT_ADD
+%token FLOAT_SUB
+%token FLOAT_MULT
+%token FLOAT_DIV
+%token FLOAT_NEG
+%token FLOAT_ABS
+%token FLOAT_SQRT
+%token FLOAT_CEIL
+%token FLOAT_FLOOR
+%token FLOAT_ROUND
+%token INT2FLOAT
+%token FLOAT2FLOAT
+%token TRUNC
+%token CPOOLREF
+%token NEW
 
 %left RIGHT_ARROW
 %left DOMINATE
@@ -209,8 +271,70 @@ out_varnode_cond:
 
 // TODO: need to rework this
 op_type_token:
-    INT_ADD { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_ADD; }
+    COPY { $$ = yy::Parser::token_kind_type::RULES_TOKEN_COPY; }
+  | LOAD { $$ = yy::Parser::token_kind_type::RULES_TOKEN_LOAD; }
+  | STORE { $$ = yy::Parser::token_kind_type::RULES_TOKEN_STORE; }
+  | BRANCH { $$ = yy::Parser::token_kind_type::RULES_TOKEN_BRANCH; }
+  | CBRANCH { $$ = yy::Parser::token_kind_type::RULES_TOKEN_CBRANCH; }
+  | BRANCHIND { $$ = yy::Parser::token_kind_type::RULES_TOKEN_BRANCHIND; }
+  | CALL { $$ = yy::Parser::token_kind_type::RULES_TOKEN_CALL; }
+  | CALLIND { $$ = yy::Parser::token_kind_type::RULES_TOKEN_CALLIND; }
+  | USERDEFINED { $$ = yy::Parser::token_kind_type::RULES_TOKEN_USERDEFINED; }
+  | RETURN { $$ = yy::Parser::token_kind_type::RULES_TOKEN_RETURN; }
+  | PIECE { $$ = yy::Parser::token_kind_type::RULES_TOKEN_PIECE; }
+  | SUBPIECE { $$ = yy::Parser::token_kind_type::RULES_TOKEN_SUBPIECE; }
+  | POPCOUNT { $$ = yy::Parser::token_kind_type::RULES_TOKEN_POPCOUNT; }
+  | LZCOUNT { $$ = yy::Parser::token_kind_type::RULES_TOKEN_LZCOUNT; }
+  | INT_EQUAL { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_EQUAL; }
+  | INT_NOTEQUAL { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_NOTEQUAL; }
+  | INT_LESS { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_LESS; }
+  | INT_SLESS { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_SLESS; }
+  | INT_LESSEQUAL { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_LESSEQUAL; }
+  | INT_SLESSEQUAL { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_SLESSEQUAL; }
+  | INT_ZEXT { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_ZEXT; }
+  | INT_SEXT { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_SEXT; }
+  | INT_ADD { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_ADD; }
   | INT_SUB { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_SUB; }
+  | INT_CARRY { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_CARRY; }
+  | INT_SCARRY { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_SCARRY; }
+  | INT_SBORROW { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_SBORROW; }
+  | INT_2COMP { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_2COMP; }
+  | INT_NEGATE { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_NEGATE; }
+  | INT_XOR { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_XOR; }
+  | INT_AND { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_AND; }
+  | INT_OR { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_OR; }
+  | INT_LEFT { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_LEFT; }
+  | INT_RIGHT { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_RIGHT; }
+  | INT_SRIGHT { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_SRIGHT; }
+  | INT_MULT { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_MULT; }
+  | INT_DIV { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_DIV; }
+  | INT_REM { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_REM; }
+  | INT_SDIV { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_SDIV; }
+  | INT_SREM { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT_SREM; }
+  | BOOL_NEGATE { $$ = yy::Parser::token_kind_type::RULES_TOKEN_BOOL_NEGATE; }
+  | BOOL_XOR { $$ = yy::Parser::token_kind_type::RULES_TOKEN_BOOL_XOR; }
+  | BOOL_AND { $$ = yy::Parser::token_kind_type::RULES_TOKEN_BOOL_AND; }
+  | BOOL_OR { $$ = yy::Parser::token_kind_type::RULES_TOKEN_BOOL_OR; }
+  | FLOAT_EQUAL { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_EQUAL; }
+  | FLOAT_NOTEQUAL { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_NOTEQUAL; }
+  | FLOAT_LESS { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_LESS; }
+  | FLOAT_LESSEQUAL { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_LESSEQUAL; }
+  | FLOAT_NAN { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_NAN; }
+  | FLOAT_ADD { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_ADD; }
+  | FLOAT_SUB { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_SUB; }
+  | FLOAT_MULT { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_MULT; }
+  | FLOAT_DIV { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_DIV; }
+  | FLOAT_NEG { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_NEG; }
+  | FLOAT_ABS { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_ABS; }
+  | FLOAT_SQRT { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_SQRT; }
+  | FLOAT_CEIL { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_CEIL; }
+  | FLOAT_FLOOR { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_FLOOR; }
+  | FLOAT_ROUND { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT_ROUND; }
+  | INT2FLOAT { $$ = yy::Parser::token_kind_type::RULES_TOKEN_INT2FLOAT; }
+  | FLOAT2FLOAT { $$ = yy::Parser::token_kind_type::RULES_TOKEN_FLOAT2FLOAT; }
+  | TRUNC { $$ = yy::Parser::token_kind_type::RULES_TOKEN_TRUNC; }
+  | CPOOLREF { $$ = yy::Parser::token_kind_type::RULES_TOKEN_CPOOLREF; }
+  | NEW { $$ = yy::Parser::token_kind_type::RULES_TOKEN_NEW; }
 
 op_type:
   op_type_token { 

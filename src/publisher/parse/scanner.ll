@@ -65,8 +65,70 @@ DELETE   { return yy::Parser::make_DELETE_KEYWORD(driver.location()); }
 \[ { return yy::Parser::make_LBRACK(driver.location()); }
 \] { return yy::Parser::make_RBRACK(driver.location()); }
 
+COPY { return yy::Parser::make_COPY(driver.location());}
+LOAD { return yy::Parser::make_LOAD(driver.location());}
+STORE { return yy::Parser::make_STORE(driver.location());}
+BRANCH { return yy::Parser::make_BRANCH(driver.location());}
+CBRANCH { return yy::Parser::make_CBRANCH(driver.location());}
+BRANCHIND { return yy::Parser::make_BRANCHIND(driver.location());}
+CALL { return yy::Parser::make_CALL(driver.location());}
+CALLIND { return yy::Parser::make_CALLIND(driver.location());}
+USERDEFINED { return yy::Parser::make_USERDEFINED(driver.location());}
+RETURN { return yy::Parser::make_RETURN(driver.location());}
+PIECE { return yy::Parser::make_PIECE(driver.location());}
+SUBPIECE { return yy::Parser::make_SUBPIECE(driver.location());}
+POPCOUNT { return yy::Parser::make_POPCOUNT(driver.location());}
+LZCOUNT { return yy::Parser::make_LZCOUNT(driver.location());}
+INT\_EQUAL { return yy::Parser::make_INT_EQUAL(driver.location());}
+INT\_NOTEQUAL { return yy::Parser::make_INT_NOTEQUAL(driver.location());}
+INT\_LESS { return yy::Parser::make_INT_LESS(driver.location());}
+INT\_SLESS { return yy::Parser::make_INT_SLESS(driver.location());}
+INT\_LESSEQUAL { return yy::Parser::make_INT_LESSEQUAL(driver.location());}
+INT\_SLESSEQUAL { return yy::Parser::make_INT_SLESSEQUAL(driver.location());}
+INT\_ZEXT { return yy::Parser::make_INT_ZEXT(driver.location());}
+INT\_SEXT { return yy::Parser::make_INT_SEXT(driver.location());}
 INT\_ADD { return yy::Parser::make_INT_ADD(driver.location());}
 INT\_SUB { return yy::Parser::make_INT_SUB(driver.location());}
+INT\_CARRY { return yy::Parser::make_INT_CARRY(driver.location());}
+INT\_SCARRY { return yy::Parser::make_INT_SCARRY(driver.location());}
+INT\_SBORROW { return yy::Parser::make_INT_SBORROW(driver.location());}
+INT\_2COMP { return yy::Parser::make_INT_2COMP(driver.location());}
+INT\_NEGATE { return yy::Parser::make_INT_NEGATE(driver.location());}
+INT\_XOR { return yy::Parser::make_INT_XOR(driver.location());}
+INT\_AND { return yy::Parser::make_INT_AND(driver.location());}
+INT\_OR { return yy::Parser::make_INT_OR(driver.location());}
+INT\_LEFT { return yy::Parser::make_INT_LEFT(driver.location());}
+INT\_RIGHT { return yy::Parser::make_INT_RIGHT(driver.location());}
+INT\_SRIGHT { return yy::Parser::make_INT_SRIGHT(driver.location());}
+INT\_MULT { return yy::Parser::make_INT_MULT(driver.location());}
+INT\_DIV { return yy::Parser::make_INT_DIV(driver.location());}
+INT\_REM { return yy::Parser::make_INT_REM(driver.location());}
+INT\_SDIV { return yy::Parser::make_INT_SDIV(driver.location());}
+INT\_SREM { return yy::Parser::make_INT_SREM(driver.location());}
+BOOL\_NEGATE { return yy::Parser::make_BOOL_NEGATE(driver.location());}
+BOOL\_XOR { return yy::Parser::make_BOOL_XOR(driver.location());}
+BOOL\_AND { return yy::Parser::make_BOOL_AND(driver.location());}
+BOOL\_OR { return yy::Parser::make_BOOL_OR(driver.location());}
+FLOAT\_EQUAL { return yy::Parser::make_FLOAT_EQUAL(driver.location());}
+FLOAT\_NOTEQUAL { return yy::Parser::make_FLOAT_NOTEQUAL(driver.location());}
+FLOAT\_LESS { return yy::Parser::make_FLOAT_LESS(driver.location());}
+FLOAT\_LESSEQUAL { return yy::Parser::make_FLOAT_LESSEQUAL(driver.location());}
+FLOAT\_NAN { return yy::Parser::make_FLOAT_NAN(driver.location());}
+FLOAT\_ADD { return yy::Parser::make_FLOAT_ADD(driver.location());}
+FLOAT\_SUB { return yy::Parser::make_FLOAT_SUB(driver.location());}
+FLOAT\_MULT { return yy::Parser::make_FLOAT_MULT(driver.location());}
+FLOAT\_DIV { return yy::Parser::make_FLOAT_DIV(driver.location());}
+FLOAT\_NEG { return yy::Parser::make_FLOAT_NEG(driver.location());}
+FLOAT\_ABS { return yy::Parser::make_FLOAT_ABS(driver.location());}
+FLOAT\_SQRT { return yy::Parser::make_FLOAT_SQRT(driver.location());}
+FLOAT\_CEIL { return yy::Parser::make_FLOAT_CEIL(driver.location());}
+FLOAT\_FLOOR { return yy::Parser::make_FLOAT_FLOOR(driver.location());}
+FLOAT\_ROUND { return yy::Parser::make_FLOAT_ROUND(driver.location());}
+INT2FLOAT { return yy::Parser::make_INT2FLOAT(driver.location());}
+FLOAT2FLOAT { return yy::Parser::make_FLOAT2FLOAT(driver.location());}
+TRUNC { return yy::Parser::make_TRUNC(driver.location());}
+CPOOLREF { return yy::Parser::make_CPOOLREF(driver.location());}
+NEW { return yy::Parser::make_NEW(driver.location());}
 
 
 [oO][a-zA-Z0-9_]+  { return yy::Parser::make_PNODE_IDENTIFIER(yytext, driver.location()); }
