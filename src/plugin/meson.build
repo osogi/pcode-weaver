@@ -1,5 +1,5 @@
 project(
-  'plugin-template',
+  'pcode-weaver-plugin',
   'cpp',
   version: '0.0.1',
   meson_version: '>=1.10.0',  # codegen module
@@ -35,5 +35,9 @@ if cc.get_argument_syntax() == 'gcc'
   add_project_arguments('-Wno-sign-compare', language: 'cpp')
 endif
 
-subdir('simple')
-subdir('src/publisher')
+inc = [
+  include_directories('../inc'),
+]
+
+
+subdir('main')
