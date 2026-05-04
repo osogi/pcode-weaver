@@ -1,6 +1,9 @@
 library(
   'pcode-weaver',
-  'main.cpp',
+  [
+    'main.cpp',
+    'pwrule.cpp',
+  ],
   dependencies: reoxide,
   include_directories: inc,
   install: true,
