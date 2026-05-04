@@ -4,3 +4,6 @@ venv
 src/publisher/parse/parser.hh
 src/publisher/parse/parser.cc
 src/publisher/parse/location.hh
+.codex
+tmp
+AGENTS.md
