@@ -2,9 +2,9 @@
 
 #include "validate/action_pcodegraph.hh"
 #include "validate/inferencer.hh"
+#include "validate/runtime_value_requirements.hh"
 
 class ValidateDriver {
-
   graph::PcodeGraph pgraph;
   std::optional<graph::ActionPcodeGraph> actgraph;
 
@@ -14,8 +14,9 @@ class ValidateDriver {
   Context &cntx;
   infer::Inferencer inferencer;
 
-  std::vector<speccond::SpecCondition> runtimeConditions;
+  std::vector<speccond::SpecCondition> userRuntimeConditions;
   std::vector<speccond::SpecCondition> requiredConditions; // from action step
+  RuntimeValueRequirements runtimeValueRequirements;
 
   graph::ActionPcodeGraph &getActgraph() { return actgraph.value(); }
 
@@ -25,6 +26,9 @@ public:
         cntx(_context), inferencer(cntx, pgraph, sizesolver, bbsolver) {};
   Errorable<void> validate(const ast::Rule &rule);
 
-  const std::vector<speccond::SpecCondition> &getRTC() const;
+  const std::vector<speccond::SpecCondition> &getURTC() const;
   const std::vector<speccond::SpecCondition> &getRQC() const;
+  std::vector<speccond::SpecCondition> getRuntimeCheckConditions() const;
+  const RuntimeValueRequirements &getRuntimeValueRequirements() const;
+  const graph::PcodeGraph &getPGraph() const;
 };

@@ -3,6 +3,7 @@ validator_src = [
   'specvalues.cpp',
   'specconditions.cpp',
   'pcodegraph.cpp',
+  'runtime_value_requirements.cpp',
   'inferencer.cpp',
   'validate_driver.cpp',
   'action_pcodegraph.cpp'

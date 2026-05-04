@@ -25,7 +25,7 @@ Errorable<void> ValidateDriver::validate(const ast::Rule &rule) {
   }
 
   auto resPatGraphInferenceUserConds =
-      inferencer.inferenceUserConds(pgraph, &runtimeConditions);
+      inferencer.inferenceUserConds(pgraph, &userRuntimeConditions);
   if (!resPatGraphInferenceUserConds.has_value()) {
     return err(
         "Inference User Conditions Pattern Graph: " +
@@ -54,19 +54,43 @@ Errorable<void> ValidateDriver::validate(const ast::Rule &rule) {
   auto resActGraphInference =
       inferencer.inference(getActgraph(), &requiredConditions);
   getActgraph().removeConditionsWithNewNodes(requiredConditions);
-
   if (!resActGraphInference.has_value()) {
     return err(
         "Inference Action Graph: " + resActGraphInference.error().message()
     );
   }
 
+  runtimeValueRequirements = RuntimeValueRequirements::fromActionGraph(
+      pgraph, getActgraph(), sizesolver, bbsolver
+  );
+
   return {};
 };
 
-const std::vector<speccond::SpecCondition> &ValidateDriver::getRTC() const {
-  return runtimeConditions;
+const std::vector<speccond::SpecCondition> &ValidateDriver::getURTC() const {
+  return userRuntimeConditions;
 };
 const std::vector<speccond::SpecCondition> &ValidateDriver::getRQC() const {
   return requiredConditions;
 };
+
+std::vector<speccond::SpecCondition>
+ValidateDriver::getRuntimeCheckConditions() const {
+  std::vector<speccond::SpecCondition> checkConditions(userRuntimeConditions);
+  checkConditions.reserve(
+      userRuntimeConditions.size() + requiredConditions.size()
+  );
+  checkConditions.insert(
+      checkConditions.end(),
+      requiredConditions.begin(),
+      requiredConditions.end()
+  );
+  return checkConditions;
+}
+
+const graph::PcodeGraph &ValidateDriver::getPGraph() const { return pgraph; }
+
+const RuntimeValueRequirements &
+ValidateDriver::getRuntimeValueRequirements() const {
+  return runtimeValueRequirements;
+}

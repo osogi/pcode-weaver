@@ -1,5 +1,6 @@
 #include "parse/ast_print.hh"
 #include "parse/driver.hh"
+#include "rulecompile/rulecompile_driver.hh"
 #include "validate/validate_driver.hh"
 
 #include <iostream>
@@ -20,7 +21,7 @@ int main(int argc, char *argv[]) {
       if (validateRes.has_value()) {
         std::cout << "Validate: Ok!\n";
 
-        auto rtcVec = vdrv.getRTC();
+        auto rtcVec = vdrv.getURTC();
         std::cout << "RTC:\n";
         for (const auto &c : rtcVec) {
           std::cout << "\t" << c << "\n";
@@ -30,6 +31,21 @@ int main(int argc, char *argv[]) {
         std::cout << "RQC:\n";
         for (const auto &c : rqcVec) {
           std::cout << "\t" << c << "\n";
+        }
+
+        auto runtimeChecks = vdrv.getRuntimeCheckConditions();
+        RuleCompileDriver cdrv(RuleCompileInput{
+            .patternGraph = vdrv.getPGraph(),
+            .runtimeChecks = runtimeChecks,
+            .runtimeValueRequirements = vdrv.getRuntimeValueRequirements(),
+        });
+        auto compileRes = cdrv.compile();
+        if (compileRes.has_value()) {
+          std::cout << "Compile: Ok! Pattern steps: "
+                    << compileRes->pattern.steps.size() << "\n";
+        } else {
+          std::cout << "Compile Error: " << compileRes.error().message()
+                    << "\n";
         }
       } else {
         std::cout << "Validate Error: " << validateRes.error().message()

@@ -11,10 +11,12 @@ cc = meson.get_compiler('cpp')
 
 inc = [
   include_directories('.'),
+  include_directories('../inc'),
   '/home/user1/my_bins/reoxide/venv/lib/python3.12/site-packages/reoxide/data/include',
 ]
 
 subdir('parse')
 subdir('validate')
+subdir('rulecompile')
 
 subdir('bin')

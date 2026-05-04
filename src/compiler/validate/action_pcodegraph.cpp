@@ -437,4 +437,22 @@ void ActionPcodeGraph::removeConditionsWithNewNodes(
   });
 }
 
+std::vector<ast::Id> ActionPcodeGraph::getNewVarnodeIds() const {
+  std::vector<ast::Id> ids;
+  ids.reserve(newVarnodes.size());
+  for (const auto &[id, _] : newVarnodes) {
+    ids.push_back(id);
+  }
+  return ids;
+}
+
+std::vector<ast::Id> ActionPcodeGraph::getNewPnodeIds() const {
+  std::vector<ast::Id> ids;
+  ids.reserve(newPnodes.size());
+  for (const auto &[id, _] : newPnodes) {
+    ids.push_back(id);
+  }
+  return ids;
+}
+
 }; // namespace graph

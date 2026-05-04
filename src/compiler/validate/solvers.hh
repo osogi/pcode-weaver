@@ -48,6 +48,25 @@ public:
     }
   }
 
+  std::optional<TermType> findoptConst(const TermType &x) const {
+    auto it = parent.find(x);
+    if (it == parent.end()) {
+      return std::nullopt;
+    }
+
+    TermType current = x;
+    while (true) {
+      auto currentIt = parent.find(current);
+      if (currentIt == parent.end()) {
+        return std::nullopt;
+      }
+      if (currentIt->second == current) {
+        return current;
+      }
+      current = currentIt->second;
+    }
+  }
+
   /// @brief  Add equation: term1 = term2
   /// @param left
   /// @param right

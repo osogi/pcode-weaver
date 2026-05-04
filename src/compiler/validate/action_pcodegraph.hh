@@ -55,6 +55,8 @@ public:
   void removeConditionsWithNewNodes(
       std::vector<speccond::SpecCondition> &conditions
   ) const;
+  std::vector<ast::Id> getNewVarnodeIds() const;
+  std::vector<ast::Id> getNewPnodeIds() const;
 
 protected:
   std::unordered_map<ast::Id, NewVarGraphNode *> newVarnodes;
