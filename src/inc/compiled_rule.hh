@@ -129,6 +129,7 @@ struct ActionStep {
   ActionNodeRef target;
   ActionNodeRef value;
   std::uint32_t inputIndex = 0;
+  std::uint32_t inputCount = 0;
   bool insertBefore = false;
   bool hasOpCode = false;
   std::int32_t opCode = 0;
@@ -140,6 +141,7 @@ struct ActionStep {
        target,
        value,
        inputIndex,
+       inputCount,
        insertBefore,
        hasOpCode,
        opCode,

@@ -372,6 +372,8 @@ Errorable<void> compileCreatePnodes(ActionCompileContext &ctx) {
             .target = actionPnode(step),
             .value = anchor.value(),
             .inputIndex = 0,
+            .inputCount =
+                static_cast<std::uint32_t>(node->edges.maxAgrNumAction + 1),
             .insertBefore = node->isInsertBefore,
             .hasOpCode = true,
             .opCode = static_cast<std::int32_t>(node->opTp->ghidraOpCode),

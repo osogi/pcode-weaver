@@ -20,5 +20,7 @@ class PcodeWeaverRule {
   // this function, and if so, stores auxiliary data for the subsequent steps.
   ghidra::int4 applyPattern(ghidra::Funcdata &data);
 
+  ghidra::int4 applyAction(ghidra::Funcdata &data);
+
   ghidra::int4 apply(ghidra::Funcdata &data);
 };

@@ -11,6 +11,10 @@
 
 namespace {
 
+using pcodeweaver::compiled::ActionNodeKind;
+using pcodeweaver::compiled::ActionNodeRef;
+using pcodeweaver::compiled::ActionStep;
+using pcodeweaver::compiled::ActionStepKind;
 using pcodeweaver::compiled::Check;
 using pcodeweaver::compiled::CheckKind;
 using pcodeweaver::compiled::CheckValue;
@@ -253,7 +257,8 @@ bool visitSourceCandidates(
 bool stepKindMatches(const MatchStep &step, const Candidate &candidate) {
   switch (step.kind) {
   case StepKind::AnyVarnode:
-    return candidate.kind == CandidateKind::Varnode && candidate.vn != nullptr;
+    return candidate.kind == CandidateKind::Varnode &&
+           candidate.vn != nullptr && !candidate.vn->isConstant();
 
   case StepKind::Constant:
     return candidate.kind == CandidateKind::Varnode &&
@@ -305,6 +310,30 @@ CheckScalar evalScalar(const CheckValue &value, const MatchState &state) {
       return {};
     }
     return {true, vn->getSize()};
+  }
+
+  case CheckValueKind::VarnodeBasicBlock:
+  case CheckValueKind::PnodeBasicBlock:
+    return {};
+  }
+
+  return {};
+}
+
+CheckScalar evalScalar(
+    const CheckValue &value,
+    const std::unordered_map<StepId, ghidra::Varnode *> &varnodes
+) {
+  switch (value.kind) {
+  case CheckValueKind::ConstantSize:
+    return {true, value.constant};
+
+  case CheckValueKind::VarnodeSize: {
+    auto iter = varnodes.find(value.step);
+    if (iter == varnodes.end() || iter->second == nullptr) {
+      return {};
+    }
+    return {true, iter->second->getSize()};
   }
 
   case CheckValueKind::VarnodeBasicBlock:
@@ -410,6 +439,200 @@ bool matchFromStep(
   );
 }
 
+ghidra::PcodeOp *lookupActionPnode(
+    const ActionNodeRef &ref,
+    const std::unordered_map<StepId, ghidra::PcodeOp *> &pnodes
+) {
+  if (ref.kind != ActionNodeKind::Pnode) {
+    return nullptr;
+  }
+  auto iter = pnodes.find(ref.step);
+  return iter == pnodes.end() ? nullptr : iter->second;
+}
+
+ghidra::Varnode *lookupActionVarnode(
+    const ActionNodeRef &ref,
+    const std::unordered_map<StepId, ghidra::Varnode *> &varnodes
+) {
+  if (ref.kind != ActionNodeKind::Varnode) {
+    return nullptr;
+  }
+  auto iter = varnodes.find(ref.step);
+  return iter == varnodes.end() ? nullptr : iter->second;
+}
+
+ghidra::int4 fallbackInputSize(ghidra::PcodeOp *op, std::uint32_t inputIndex) {
+  if (op != nullptr &&
+      inputIndex < static_cast<std::uint32_t>(op->numInput())) {
+    ghidra::Varnode *current = op->getIn(static_cast<ghidra::int4>(inputIndex));
+    if (current != nullptr) {
+      return current->getSize();
+    }
+  }
+  return 1;
+}
+
+ghidra::Varnode *resolveInputVarnode(
+    ghidra::Funcdata &data, const ActionNodeRef &ref, ghidra::PcodeOp *target,
+    std::uint32_t inputIndex,
+    const std::unordered_map<StepId, ghidra::Varnode *> &varnodes
+) {
+  switch (ref.kind) {
+  case ActionNodeKind::Varnode:
+    return lookupActionVarnode(ref, varnodes);
+
+  case ActionNodeKind::Constant:
+    return data.newConstant(
+        fallbackInputSize(target, inputIndex),
+        static_cast<ghidra::uintb>(ref.constant)
+    );
+
+  case ActionNodeKind::Empty:
+  case ActionNodeKind::Pnode:
+    return nullptr;
+  }
+
+  return nullptr;
+}
+
+bool setPnodeInput(
+    ghidra::Funcdata &data, ghidra::PcodeOp *op, ghidra::Varnode *vn,
+    std::uint32_t inputIndex
+) {
+  if (op == nullptr || op->isDead()) {
+    return false;
+  }
+
+  ghidra::int4 slot = static_cast<ghidra::int4>(inputIndex);
+  if (vn == nullptr) {
+    if (inputIndex >= static_cast<std::uint32_t>(op->numInput())) {
+      return false;
+    }
+    data.opUnsetInput(op, slot);
+    return true;
+  }
+
+  if (inputIndex < static_cast<std::uint32_t>(op->numInput())) {
+    data.opSetInput(op, vn, slot);
+    return true;
+  }
+  if (inputIndex == static_cast<std::uint32_t>(op->numInput())) {
+    data.opInsertInput(op, vn, slot);
+    return true;
+  }
+  return false;
+}
+
+bool setPnodeOutput(
+    ghidra::Funcdata &data, ghidra::PcodeOp *op, ghidra::Varnode *vn
+) {
+  if (op == nullptr || op->isDead()) {
+    return false;
+  }
+  if (vn == nullptr) {
+    if (op->getOut() != nullptr) {
+      data.opUnsetOutput(op);
+    }
+    return true;
+  }
+
+  ghidra::PcodeOp *oldDef = vn->getDef();
+  if (oldDef != nullptr && oldDef != op && oldDef->getOut() == vn) {
+    data.opUnsetOutput(oldDef);
+  }
+  if (op->getOut() != nullptr && op->getOut() != vn) {
+    data.opUnsetOutput(op);
+  }
+  data.opSetOutput(op, vn);
+  return true;
+}
+
+bool applyActionStep(
+    ghidra::Funcdata &data, const ActionStep &step,
+    std::unordered_map<StepId, ghidra::PcodeOp *> &pnodes,
+    std::unordered_map<StepId, ghidra::Varnode *> &varnodes
+) {
+  switch (step.kind) {
+  case ActionStepKind::CreateVarnode: {
+    if (step.target.kind != ActionNodeKind::Varnode || !step.hasSize) {
+      return false;
+    }
+    CheckScalar size = evalScalar(step.size, varnodes);
+    if (!size.valid || size.value <= 0) {
+      return false;
+    }
+    ghidra::Varnode *vn = data.newUnique(static_cast<ghidra::int4>(size.value));
+    if (vn == nullptr) {
+      return false;
+    }
+    varnodes[step.target.step] = vn;
+    return true;
+  }
+
+  case ActionStepKind::CreatePnode: {
+    if (step.target.kind != ActionNodeKind::Pnode || !step.hasOpCode) {
+      return false;
+    }
+    ghidra::PcodeOp *anchor = lookupActionPnode(step.value, pnodes);
+    if (anchor == nullptr || anchor->isDead()) {
+      return false;
+    }
+
+    ghidra::PcodeOp *op = data.newOp(
+        static_cast<ghidra::int4>(step.inputCount), anchor->getAddr()
+    );
+    if (op == nullptr) {
+      return false;
+    }
+    data.opSetOpcode(op, static_cast<ghidra::OpCode>(step.opCode));
+    if (step.insertBefore) {
+      data.opInsertBefore(op, anchor);
+    } else {
+      data.opInsertAfter(op, anchor);
+    }
+    pnodes[step.target.step] = op;
+    return true;
+  }
+
+  case ActionStepKind::SetPnodeOutput: {
+    ghidra::PcodeOp *op = lookupActionPnode(step.target, pnodes);
+    ghidra::Varnode *vn = nullptr;
+    if (step.value.kind == ActionNodeKind::Varnode) {
+      vn = lookupActionVarnode(step.value, varnodes);
+      if (vn == nullptr) {
+        return false;
+      }
+    } else if (step.value.kind != ActionNodeKind::Empty) {
+      return false;
+    }
+    return setPnodeOutput(data, op, vn);
+  }
+
+  case ActionStepKind::SetPnodeInput: {
+    ghidra::PcodeOp *op = lookupActionPnode(step.target, pnodes);
+    ghidra::Varnode *vn =
+        resolveInputVarnode(data, step.value, op, step.inputIndex, varnodes);
+    if (step.value.kind != ActionNodeKind::Empty && vn == nullptr) {
+      return false;
+    }
+    return setPnodeInput(data, op, vn, step.inputIndex);
+  }
+
+  case ActionStepKind::DeletePnode: {
+    ghidra::PcodeOp *op = lookupActionPnode(step.target, pnodes);
+    if (op == nullptr || op->isDead()) {
+      return false;
+    }
+    data.opUnlink(op);
+    data.opDestroy(op);
+    pnodes.erase(step.target.step);
+    return true;
+  }
+  }
+
+  return false;
+}
+
 } // namespace
 
 ghidra::int4 PcodeWeaverRule::applyPatternToPnode(
@@ -459,6 +682,18 @@ ghidra::int4 PcodeWeaverRule::applyPattern(ghidra::Funcdata &data) {
   return 0;
 }
 
+ghidra::int4 PcodeWeaverRule::applyAction(ghidra::Funcdata &data) {
+  for (const ActionStep &step : compiled.action.steps) {
+    if (!applyActionStep(data, step, patternPnodes, patternVarnodes)) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
 ghidra::int4 PcodeWeaverRule::apply(ghidra::Funcdata &data) {
-  return applyPattern(data);
+  if (applyPattern(data) == 0) {
+    return 0;
+  }
+  return applyAction(data);
 }
