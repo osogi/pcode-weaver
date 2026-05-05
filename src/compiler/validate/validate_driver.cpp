@@ -90,6 +90,14 @@ ValidateDriver::getRuntimeCheckConditions() const {
 
 const graph::PcodeGraph &ValidateDriver::getPGraph() const { return pgraph; }
 
+const graph::ActionPcodeGraph &ValidateDriver::getActGraph() const {
+  return actgraph.value();
+}
+
+const solvers::SizeSolver &ValidateDriver::getSizeSolver() const {
+  return sizesolver;
+}
+
 const RuntimeValueRequirements &
 ValidateDriver::getRuntimeValueRequirements() const {
   return runtimeValueRequirements;

@@ -55,6 +55,7 @@ public:
   void removeConditionsWithNewNodes(
       std::vector<speccond::SpecCondition> &conditions
   ) const;
+  const NewOpGraphNode *getNewPnode(const ast::Id &id) const;
   std::vector<ast::Id> getNewVarnodeIds() const;
   std::vector<ast::Id> getNewPnodeIds() const;
 

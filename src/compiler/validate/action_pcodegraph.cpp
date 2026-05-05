@@ -437,6 +437,11 @@ void ActionPcodeGraph::removeConditionsWithNewNodes(
   });
 }
 
+const NewOpGraphNode *ActionPcodeGraph::getNewPnode(const ast::Id &id) const {
+  auto it = newPnodes.find(id);
+  return it == newPnodes.end() ? nullptr : it->second;
+}
+
 std::vector<ast::Id> ActionPcodeGraph::getNewVarnodeIds() const {
   std::vector<ast::Id> ids;
   ids.reserve(newVarnodes.size());

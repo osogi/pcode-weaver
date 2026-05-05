@@ -38,6 +38,21 @@ enum class CheckValueKind : std::uint8_t {
   PnodeBasicBlock,
 };
 
+enum class ActionNodeKind : std::uint8_t {
+  Varnode,
+  Pnode,
+  Empty,
+  Constant,
+};
+
+enum class ActionStepKind : std::uint8_t {
+  CreateVarnode,
+  CreatePnode,
+  SetPnodeOutput,
+  SetPnodeInput,
+  DeletePnode,
+};
+
 struct StepSource {
   SourceKind kind = SourceKind::RootPnode;
   StepId from = 0;
@@ -99,12 +114,53 @@ struct PatternProgram {
   }
 };
 
+struct ActionNodeRef {
+  ActionNodeKind kind = ActionNodeKind::Empty;
+  StepId step = 0;
+  std::int64_t constant = 0;
+
+  template <class Archive> void serialize(Archive &ar) {
+    ar(kind, step, constant);
+  }
+};
+
+struct ActionStep {
+  ActionStepKind kind = ActionStepKind::CreateVarnode;
+  ActionNodeRef target;
+  ActionNodeRef value;
+  std::uint32_t inputIndex = 0;
+  bool insertBefore = false;
+  bool hasOpCode = false;
+  std::int32_t opCode = 0;
+  bool hasSize = false;
+  CheckValue size;
+
+  template <class Archive> void serialize(Archive &ar) {
+    ar(kind,
+       target,
+       value,
+       inputIndex,
+       insertBefore,
+       hasOpCode,
+       opCode,
+       hasSize,
+       size);
+  }
+};
+
+struct ActionProgram {
+  std::vector<ActionStep> steps;
+
+  template <class Archive> void serialize(Archive &ar) { ar(steps); }
+};
+
 struct Rule {
   std::uint32_t formatVersion = 1;
   PatternProgram pattern;
+  ActionProgram action;
 
   template <class Archive> void serialize(Archive &ar) {
-    ar(formatVersion, pattern);
+    ar(formatVersion, pattern, action);
   }
 };
 

@@ -1,15 +1,20 @@
 #pragma once
 
-#include "compiled_rule.hh"
 #include "common/error.hh"
+#include "compiled_rule.hh"
+#include "validate/action_pcodegraph.hh"
 #include "validate/pcodegraph.hh"
 #include "validate/runtime_value_requirements.hh"
+#include "validate/solvers.hh"
 #include "validate/specconditions.hh"
 
 #include <vector>
 
 struct RuleCompileInput {
+  const std::vector<ast::RuleAction> &actions;
   const graph::PcodeGraph &patternGraph;
+  const graph::ActionPcodeGraph &actionGraph;
+  const solvers::SizeSolver &sizeSolver;
   const std::vector<speccond::SpecCondition> &runtimeChecks;
   const RuntimeValueRequirements &runtimeValueRequirements;
 };

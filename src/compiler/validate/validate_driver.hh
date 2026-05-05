@@ -31,4 +31,6 @@ public:
   std::vector<speccond::SpecCondition> getRuntimeCheckConditions() const;
   const RuntimeValueRequirements &getRuntimeValueRequirements() const;
   const graph::PcodeGraph &getPGraph() const;
+  const graph::ActionPcodeGraph &getActGraph() const;
+  const solvers::SizeSolver &getSizeSolver() const;
 };

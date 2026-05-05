@@ -34,15 +34,22 @@ int main(int argc, char *argv[]) {
         }
 
         auto runtimeChecks = vdrv.getRuntimeCheckConditions();
-        RuleCompileDriver cdrv(RuleCompileInput{
-            .patternGraph = vdrv.getPGraph(),
-            .runtimeChecks = runtimeChecks,
-            .runtimeValueRequirements = vdrv.getRuntimeValueRequirements(),
-        });
+        RuleCompileDriver cdrv(
+            RuleCompileInput{
+                .actions = rule.actions,
+                .patternGraph = vdrv.getPGraph(),
+                .actionGraph = vdrv.getActGraph(),
+                .sizeSolver = vdrv.getSizeSolver(),
+                .runtimeChecks = runtimeChecks,
+                .runtimeValueRequirements = vdrv.getRuntimeValueRequirements(),
+            }
+        );
         auto compileRes = cdrv.compile();
         if (compileRes.has_value()) {
           std::cout << "Compile: Ok! Pattern steps: "
-                    << compileRes->pattern.steps.size() << "\n";
+                    << compileRes->pattern.steps.size()
+                    << ", action steps: " << compileRes->action.steps.size()
+                    << "\n";
         } else {
           std::cout << "Compile Error: " << compileRes.error().message()
                     << "\n";

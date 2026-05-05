@@ -61,7 +61,9 @@ bool isGhost(Key key) {
   if (key.kind == KeyKind::Pnode) {
     return graph::unpackGP(*asPnode(key))->isGhost;
   }
-  return std::visit([](const auto &node) { return node->isGhost; }, *asVarnode(key));
+  return std::visit(
+      [](const auto &node) { return node->isGhost; }, *asVarnode(key)
+  );
 }
 
 std::vector<NextNode> nextNodes(Key key, compiled::StepId from) {
@@ -79,39 +81,45 @@ std::vector<NextNode> nextNodes(Key key, compiled::StepId from) {
       if (gv == nullptr) {
         continue;
       }
-      result.push_back(NextNode{
-          .key = keyOf(gv),
-          .source = compiled::StepSource{
-              .kind = compiled::SourceKind::PnodeInput,
-              .from = from,
-              .inputIndex = static_cast<std::uint32_t>(argNum),
-          },
-      });
+      result.push_back(
+          NextNode{
+              .key = keyOf(gv),
+              .source = compiled::StepSource{
+                  .kind = compiled::SourceKind::PnodeInput,
+                  .from = from,
+                  .inputIndex = static_cast<std::uint32_t>(argNum),
+              },
+          }
+      );
     }
 
     if (pn.edges.output != nullptr) {
-      result.push_back(NextNode{
-          .key = keyOf(pn.edges.output),
-          .source = compiled::StepSource{
-              .kind = compiled::SourceKind::PnodeOutput,
-              .from = from,
-              .inputIndex = 0,
-          },
-      });
+      result.push_back(
+          NextNode{
+              .key = keyOf(pn.edges.output),
+              .source = compiled::StepSource{
+                  .kind = compiled::SourceKind::PnodeOutput,
+                  .from = from,
+                  .inputIndex = 0,
+              },
+          }
+      );
     }
     return result;
   }
 
   const graph::VarnodeEdges &edges = graph::getEdges(asVarnode(key));
   if (edges.def.has_value() && edges.def.value() != nullptr) {
-    result.push_back(NextNode{
-        .key = keyOf(edges.def.value()),
-        .source = compiled::StepSource{
-            .kind = compiled::SourceKind::VarnodeDef,
-            .from = from,
-            .inputIndex = 0,
-        },
-    });
+    result.push_back(
+        NextNode{
+            .key = keyOf(edges.def.value()),
+            .source = compiled::StepSource{
+                .kind = compiled::SourceKind::VarnodeDef,
+                .from = from,
+                .inputIndex = 0,
+            },
+        }
+    );
   }
 
   std::vector<graph::GraphPnode *> descends(
@@ -124,14 +132,16 @@ std::vector<NextNode> nextNodes(Key key, compiled::StepId from) {
     const graph::OpGraphNode &pn = *graph::unpackGP(*gp);
     for (const auto &[argNum, in] : pn.edges.inrefs) {
       if (static_cast<const void *>(in) == key.ptr) {
-        result.push_back(NextNode{
-            .key = keyOf(gp),
-            .source = compiled::StepSource{
-                .kind = compiled::SourceKind::VarnodeDescend,
-                .from = from,
-                .inputIndex = static_cast<std::uint32_t>(argNum),
-            },
-        });
+        result.push_back(
+            NextNode{
+                .key = keyOf(gp),
+                .source = compiled::StepSource{
+                    .kind = compiled::SourceKind::VarnodeDescend,
+                    .from = from,
+                    .inputIndex = static_cast<std::uint32_t>(argNum),
+                },
+            }
+        );
         break;
       }
     }
@@ -256,12 +266,20 @@ void collectReferencedGhosts(
               collectSizeValueGhost(cond.b, varnodeKeys, referencedGhosts);
             },
             [&](const speccond::BBEqual &cond) {
-              collectBBValueGhost(cond.a, varnodeKeys, pnodeKeys, referencedGhosts);
-              collectBBValueGhost(cond.b, varnodeKeys, pnodeKeys, referencedGhosts);
+              collectBBValueGhost(
+                  cond.a, varnodeKeys, pnodeKeys, referencedGhosts
+              );
+              collectBBValueGhost(
+                  cond.b, varnodeKeys, pnodeKeys, referencedGhosts
+              );
             },
             [&](const speccond::BBDominate &cond) {
-              collectBBValueGhost(cond.a, varnodeKeys, pnodeKeys, referencedGhosts);
-              collectBBValueGhost(cond.b, varnodeKeys, pnodeKeys, referencedGhosts);
+              collectBBValueGhost(
+                  cond.a, varnodeKeys, pnodeKeys, referencedGhosts
+              );
+              collectBBValueGhost(
+                  cond.b, varnodeKeys, pnodeKeys, referencedGhosts
+              );
             },
         },
         condition
@@ -321,11 +339,12 @@ Errorable<CompiledValue> compileSizeValue(
       util::overloaded{
           [&](const specvalues::ConcreateSize &sz) -> Errorable<CompiledValue> {
             return CompiledValue{
-                .value = compiled::CheckValue{
-                    .kind = compiled::CheckValueKind::ConstantSize,
-                    .step = 0,
-                    .constant = sz.value,
-                },
+                .value =
+                    compiled::CheckValue{
+                        .kind = compiled::CheckValueKind::ConstantSize,
+                        .step = 0,
+                        .constant = sz.value,
+                    },
                 .step = std::nullopt,
             };
           },
@@ -335,11 +354,12 @@ Errorable<CompiledValue> compileSizeValue(
               return std::unexpected(step.error());
             }
             return CompiledValue{
-                .value = compiled::CheckValue{
-                    .kind = compiled::CheckValueKind::VarnodeSize,
-                    .step = step.value(),
-                    .constant = 0,
-                },
+                .value =
+                    compiled::CheckValue{
+                        .kind = compiled::CheckValueKind::VarnodeSize,
+                        .step = step.value(),
+                        .constant = 0,
+                    },
                 .step = step.value(),
             };
           },
@@ -361,11 +381,12 @@ Errorable<CompiledValue> compileBBValue(
               return std::unexpected(step.error());
             }
             return CompiledValue{
-                .value = compiled::CheckValue{
-                    .kind = compiled::CheckValueKind::VarnodeBasicBlock,
-                    .step = step.value(),
-                    .constant = 0,
-                },
+                .value =
+                    compiled::CheckValue{
+                        .kind = compiled::CheckValueKind::VarnodeBasicBlock,
+                        .step = step.value(),
+                        .constant = 0,
+                    },
                 .step = step.value(),
             };
           },
@@ -375,11 +396,12 @@ Errorable<CompiledValue> compileBBValue(
               return std::unexpected(step.error());
             }
             return CompiledValue{
-                .value = compiled::CheckValue{
-                    .kind = compiled::CheckValueKind::PnodeBasicBlock,
-                    .step = step.value(),
-                    .constant = 0,
-                },
+                .value =
+                    compiled::CheckValue{
+                        .kind = compiled::CheckValueKind::PnodeBasicBlock,
+                        .step = step.value(),
+                        .constant = 0,
+                    },
                 .step = step.value(),
             };
           },
@@ -402,7 +424,7 @@ compiled::StepId attachPoint(
 
 } // namespace
 
-Errorable<compiled::PatternProgram> compilePattern(
+Errorable<PatternCompileResult> compilePatternWithIds(
     const graph::PcodeGraph &pgraph,
     const std::vector<speccond::SpecCondition> &runtimeChecks,
     const RuntimeValueRequirements &runtimeValueRequirements
@@ -414,7 +436,9 @@ Errorable<compiled::PatternProgram> compilePattern(
   collectGraphNodes(pgraph, allNodes, typedPnodes, varnodeKeys, pnodeKeys);
 
   std::unordered_set<Key, KeyHash> referencedGhosts;
-  collectReferencedGhosts(runtimeChecks, varnodeKeys, pnodeKeys, referencedGhosts);
+  collectReferencedGhosts(
+      runtimeChecks, varnodeKeys, pnodeKeys, referencedGhosts
+  );
   collectRequiredValueGhosts(
       runtimeValueRequirements, varnodeKeys, pnodeKeys, referencedGhosts
   );
@@ -430,9 +454,11 @@ Errorable<compiled::PatternProgram> compilePattern(
     return err("Pattern compilation requires a non-ignored pnode with op type");
   }
 
-  std::sort(typedPnodes.begin(), typedPnodes.end(), [](const auto *a, const auto *b) {
-    return (graph::unpackGP(*a)->id <=> graph::unpackGP(*b)->id) < 0;
-  });
+  std::sort(
+      typedPnodes.begin(), typedPnodes.end(), [](const auto *a, const auto *b) {
+        return (graph::unpackGP(*a)->id <=> graph::unpackGP(*b)->id) < 0;
+      }
+  );
 
   compiled::PatternProgram program;
   std::unordered_map<Key, compiled::StepId, KeyHash> stepIds;
@@ -469,10 +495,12 @@ Errorable<compiled::PatternProgram> compilePattern(
       if (queued.contains(next.key)) {
         compiled::StepId expectedStep = stepIds.at(next.key);
         compiled::StepId checkStep = std::max(currentStep, expectedStep);
-        program.steps[checkStep].edgeChecks.push_back(compiled::EdgeCheck{
-            .source = next.source,
-            .expected = expectedStep,
-        });
+        program.steps[checkStep].edgeChecks.push_back(
+            compiled::EdgeCheck{
+                .source = next.source,
+                .expected = expectedStep,
+            }
+        );
         continue;
       }
       queued.insert(next.key);
@@ -504,8 +532,10 @@ Errorable<compiled::PatternProgram> compilePattern(
   for (const auto &[key, step] : stepIds) {
     if (key.kind == KeyKind::Pnode) {
       pnodeSteps.emplace(graph::unpackGP(*asPnode(key))->id, step);
-    } else if (const graph::VarGraphNode *vn =
-                   get_if_uniq<graph::VarGraphNode>(asVarnode(key))) {
+    } else if (
+        const graph::VarGraphNode *vn =
+            get_if_uniq<graph::VarGraphNode>(asVarnode(key))
+    ) {
       varnodeSteps.emplace(vn->id, step);
     }
   }
@@ -529,7 +559,8 @@ Errorable<compiled::PatternProgram> compilePattern(
                       .left = left->value,
                       .right = right->value,
                   },
-                  attachPoint(left->step, right->step)};
+                  attachPoint(left->step, right->step)
+              };
             },
             [&](const speccond::BBEqual &cond)
                 -> Errorable<std::pair<compiled::Check, compiled::StepId>> {
@@ -547,7 +578,8 @@ Errorable<compiled::PatternProgram> compilePattern(
                       .left = left->value,
                       .right = right->value,
                   },
-                  attachPoint(left->step, right->step)};
+                  attachPoint(left->step, right->step)
+              };
             },
             [&](const speccond::BBDominate &cond)
                 -> Errorable<std::pair<compiled::Check, compiled::StepId>> {
@@ -565,7 +597,8 @@ Errorable<compiled::PatternProgram> compilePattern(
                       .left = left->value,
                       .right = right->value,
                   },
-                  attachPoint(left->step, right->step)};
+                  attachPoint(left->step, right->step)
+              };
             },
         },
         condition
@@ -577,7 +610,11 @@ Errorable<compiled::PatternProgram> compilePattern(
     program.steps[compiledCheck->second].checks.push_back(compiledCheck->first);
   }
 
-  return program;
+  return PatternCompileResult{
+      .program = std::move(program),
+      .varnodeSteps = std::move(varnodeSteps),
+      .pnodeSteps = std::move(pnodeSteps),
+  };
 }
 
 } // namespace rulecompile

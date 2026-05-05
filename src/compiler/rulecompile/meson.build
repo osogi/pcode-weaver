@@ -1,4 +1,5 @@
 rulecompile_src = [
+  'compile_action.cpp',
   'compile_pattern.cpp',
   'rulecompile_driver.cpp',
 ]

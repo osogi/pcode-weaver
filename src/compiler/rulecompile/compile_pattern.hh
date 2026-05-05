@@ -1,16 +1,23 @@
 #pragma once
 
-#include "compiled_rule.hh"
 #include "common/error.hh"
+#include "compiled_rule.hh"
 #include "validate/pcodegraph.hh"
 #include "validate/runtime_value_requirements.hh"
 #include "validate/specconditions.hh"
 
+#include <unordered_map>
 #include <vector>
 
 namespace rulecompile {
 
-Errorable<pcodeweaver::compiled::PatternProgram> compilePattern(
+struct PatternCompileResult {
+  pcodeweaver::compiled::PatternProgram program;
+  std::unordered_map<ast::Id, pcodeweaver::compiled::StepId> varnodeSteps;
+  std::unordered_map<ast::Id, pcodeweaver::compiled::StepId> pnodeSteps;
+};
+
+Errorable<PatternCompileResult> compilePatternWithIds(
     const graph::PcodeGraph &pgraph,
     const std::vector<speccond::SpecCondition> &runtimeChecks,
     const RuntimeValueRequirements &runtimeValueRequirements
