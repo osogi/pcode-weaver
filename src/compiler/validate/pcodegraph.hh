@@ -85,7 +85,7 @@ struct PnodeEdges {
       : output(nullptr), maxAgrNumPattern(0),
         maxAgrNumAction(maxAgrNumPattern) {};
 
-  int32_t updateMaxArgNum(bool onlyAction);
+  int32_t updateMaxArgNum(bool actionOnly);
 };
 
 struct OpGraphNode {
@@ -193,7 +193,7 @@ public:
   Errorable<void> addPatterns(const std::vector<ast::RulePattern> &ps);
   void initGhostNodes(Context &cntx);
   Errorable<void> validate();
-  void updateMaxArgForPnodes(bool patternStep);
+  void updateMaxArgForPnodes(bool actionOnly);
 
 protected:
   std::list<unq<GraphNode>> nodes;

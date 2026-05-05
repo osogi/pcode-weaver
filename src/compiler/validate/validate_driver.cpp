@@ -5,7 +5,7 @@ Errorable<void> ValidateDriver::validate(const ast::Rule &rule) {
   if (!resPatGraphBuild.has_value()) {
     return err("Build Pattern Graph: " + resPatGraphBuild.error().message());
   }
-  pgraph.updateMaxArgForPnodes(true);
+  pgraph.updateMaxArgForPnodes(false);
   pgraph.initGhostNodes(cntx);
 
   actgraph.emplace(pgraph);
@@ -42,7 +42,7 @@ Errorable<void> ValidateDriver::validate(const ast::Rule &rule) {
         resActGraphBuild.error().message()
     );
   }
-  getActgraph().updateMaxArgForPnodes(false);
+  getActgraph().updateMaxArgForPnodes(true);
 
   auto resActGraphValidate = getActgraph().validate();
   if (!resActGraphValidate.has_value()) {

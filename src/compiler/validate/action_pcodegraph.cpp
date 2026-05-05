@@ -349,6 +349,10 @@ Errorable<void> ActionPcodeGraph::validateNewPnode(const NewOpGraphNode &node) {
   return {};
 };
 Errorable<void> ActionPcodeGraph::validate() {
+  for (const auto &[_id, newPnode] : newPnodes) {
+    newPnode->edges.maxAgrNumPattern = newPnode->edges.maxAgrNumAction;
+  }
+
   auto res = PcodeGraph::validate();
   if (!res.has_value()) {
     return res;

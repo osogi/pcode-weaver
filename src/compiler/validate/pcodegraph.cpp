@@ -50,7 +50,7 @@ bool isEmpty(const GraphVarnode *gv) {
   return std::holds_alternative<unq<EmptyGraphNode>>(*gv);
 }
 
-int32_t PnodeEdges::updateMaxArgNum(bool onlyAction) {
+int32_t PnodeEdges::updateMaxArgNum(bool actionOnly) {
   int32_t maxArg = -1;
   for (auto &[argNum, gv] : inrefs) {
     if (!isEmpty(gv)) {
@@ -60,7 +60,7 @@ int32_t PnodeEdges::updateMaxArgNum(bool onlyAction) {
     }
   }
 
-  if (!onlyAction) {
+  if (!actionOnly) {
     maxAgrNumPattern = maxArg;
   }
   maxAgrNumAction = maxArg;
@@ -236,10 +236,20 @@ Errorable<void> PcodeGraph::validateVarnode(const GraphVarnode &gvn) {
 Errorable<void> PcodeGraph::validatePnodeInSpecial(
     const OpGraphNode &og, const ast::InVarnodeConditionsSpecial &spec
 ) {
+  (void)spec;
   int32_t patMaxArg = og.edges.maxAgrNumPattern;
   int32_t actMaxArg = og.edges.maxAgrNumAction;
 
-  int32_t maxArgNum = std::min(patMaxArg, actMaxArg);
+  if (patMaxArg != actMaxArg) {
+    return err(
+        "Action cannot change number of args for pnode " + og.id.getName() +
+        " with special input conditions: pattern max arg is " +
+        std::to_string(patMaxArg) + ", action max arg is " +
+        std::to_string(actMaxArg)
+    );
+  }
+
+  int32_t maxArgNum = patMaxArg;
   for (const auto &[argNum, gv] : og.edges.inrefs) {
     if (static_cast<int64_t>(argNum) <= maxArgNum) {
       if (isEmpty(gv)) {
@@ -247,52 +257,6 @@ Errorable<void> PcodeGraph::validatePnodeInSpecial(
             "Pnode " + og.id.getName() + " has EMPTY as " +
             std::to_string(argNum) +
             " arg. Not expected for all args <= " + std::to_string(argNum)
-        );
-      }
-    }
-  }
-
-  if (patMaxArg < actMaxArg) {
-    // added new args
-    for (int32_t i = patMaxArg + 1; i <= actMaxArg; i++) {
-      std::string instead = "";
-      if (og.edges.inrefs.contains(i)) {
-        const GraphVarnode *gv = og.edges.inrefs.at(i);
-        if (!isEmpty(gv)) {
-          instead = toStr(gv);
-        }
-      } else {
-        instead = "UNDEFINED";
-      }
-
-      if (instead.size() != 0) {
-        return err(
-            "Expected all args for pnode (" + og.id.getName() + ") from " +
-            std::to_string(patMaxArg + 1) + " to " + std::to_string(actMaxArg) +
-            " will be explicity and non-EMPTY. But got instead " + instead +
-            " as " + std::to_string(i) + "arg"
-        );
-      }
-    }
-  } else {
-    // removed old args
-    for (int32_t i = actMaxArg + 1; i <= patMaxArg; i++) {
-      std::string instead = "";
-      if (og.edges.inrefs.contains(i)) {
-        const GraphVarnode *gv = og.edges.inrefs.at(i);
-        if (isEmpty(gv)) {
-          instead = toStr(gv);
-        }
-      } else {
-        instead = "UNDEFINED";
-      }
-
-      if (instead.size() != 0) {
-        return err(
-            "Expected all args for pnode (" + og.id.getName() + ") from " +
-            std::to_string(actMaxArg + 1) + " to " + std::to_string(patMaxArg) +
-            " will be explicity and EMPTY. But got instead " + instead +
-            " as " + std::to_string(i) + "arg"
         );
       }
     }
@@ -568,9 +532,9 @@ Errorable<void> PcodeGraph::validate() {
   return {};
 }
 
-void PcodeGraph::updateMaxArgForPnodes(bool actionStep) {
+void PcodeGraph::updateMaxArgForPnodes(bool actionOnly) {
   for (auto &[_id, gpn] : livePnodes()) {
-    unpackGP(*gpn)->edges.updateMaxArgNum(actionStep);
+    unpackGP(*gpn)->edges.updateMaxArgNum(actionOnly);
   }
 }
 
