@@ -3,6 +3,7 @@
 
 #include "compiled_rule.hh"
 #include "pwrule.hh"
+#include "rule_directory.hh"
 
 #include <cereal/archives/binary.hpp>
 #include <cereal/archives/portable_binary.hpp>
@@ -14,7 +15,6 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <cstdlib>
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -47,25 +47,6 @@ struct LoadedRule {
   std::filesystem::path path;
   pcodeweaver::compiled::Rule rule;
 };
-
-std::filesystem::path getRuleDirectory() {
-  const char *envRuleDir = std::getenv("PCODE_WEAVER_RULE_DIR");
-  if (envRuleDir != nullptr && envRuleDir[0] != '\0') {
-    return envRuleDir;
-  }
-
-  const char *xdgDataHome = std::getenv("XDG_DATA_HOME");
-  if (xdgDataHome != nullptr && xdgDataHome[0] != '\0') {
-    return std::filesystem::path{xdgDataHome} / "pcode-weaver";
-  }
-
-  const char *home = std::getenv("HOME");
-  if (home != nullptr && home[0] != '\0') {
-    return std::filesystem::path{home} / ".local" / "share" / "pcode-weaver";
-  }
-
-  return std::filesystem::path{".local"} / "share" / "pcode-weaver";
-}
 
 template <class Archive>
 std::optional<pcodeweaver::compiled::Rule> loadRuleWithArchive(
@@ -202,7 +183,7 @@ private:
   std::vector<LoadedRule> rules;
 
   void loadRules() {
-    const std::filesystem::path ruleDirectory = getRuleDirectory();
+    const std::filesystem::path ruleDirectory = pcodeweaver::getRuleDirectory();
     LOG_INFO("Loading PcodeWeaver rules from %s", ruleDirectory.c_str());
 
     for (const std::filesystem::path &path : listRuleFiles(ruleDirectory)) {
