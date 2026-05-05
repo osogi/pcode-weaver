@@ -75,6 +75,10 @@ bool isRealCandidate(const Candidate &candidate) {
 }
 
 bool sameCandidate(const Candidate &left, const Candidate &right) {
+  if (!isRealCandidate(left) && !isRealCandidate(right)) {
+    return true;
+  }
+
   if (left.kind != right.kind) {
     return false;
   }
@@ -115,14 +119,14 @@ void clearStep(MatchState &state, StepId step) {
 
 void bindStep(MatchState &state, StepId step, const Candidate &candidate) {
   clearStep(state, step);
-  if (candidate.kind == CandidateKind::Pnode) {
+  if (!isRealCandidate(candidate)) {
+    state.emptySteps.insert(step);
+  } else if (candidate.kind == CandidateKind::Pnode) {
     state.pnodes.emplace(step, candidate.op);
     state.usedPnodes.insert(candidate.op);
-  } else if (candidate.kind == CandidateKind::Varnode) {
+  } else {
     state.varnodes.emplace(step, candidate.vn);
     state.usedVarnodes.insert(candidate.vn);
-  } else {
-    state.emptySteps.insert(step);
   }
 }
 
@@ -179,17 +183,25 @@ bool visitSourceCandidates(
 ) {
   switch (source.kind) {
   case SourceKind::RootPnode:
+    if (root == nullptr) {
+      return false;
+    }
     return visitor(pnodeCandidate(root));
 
   case SourceKind::PnodeInput: {
     ghidra::PcodeOp *from = getPnode(state, source.from);
-    if (from == nullptr ||
-        source.inputIndex >= static_cast<std::uint32_t>(from->numInput())) {
+    if (from == nullptr) {
       return false;
     }
-    return visitor(varnodeCandidate(
-        from->getIn(static_cast<ghidra::int4>(source.inputIndex))
-    ));
+    if (source.inputIndex >= static_cast<std::uint32_t>(from->numInput())) {
+      return visitor(emptyCandidate());
+    }
+    ghidra::Varnode *in =
+        from->getIn(static_cast<ghidra::int4>(source.inputIndex));
+    if (in == nullptr) {
+      return false;
+    }
+    return visitor(varnodeCandidate(in));
   }
 
   case SourceKind::PnodeOutput: {
@@ -216,6 +228,7 @@ bool visitSourceCandidates(
       return false;
     }
 
+    bool hasCandidate = false;
     for (auto iter = vn->beginDescend(); iter != vn->endDescend(); ++iter) {
       ghidra::PcodeOp *descend = *iter;
       if (descend == nullptr ||
@@ -224,12 +237,13 @@ bool visitSourceCandidates(
         continue;
       }
       if (descend->getIn(static_cast<ghidra::int4>(source.inputIndex)) == vn) {
+        hasCandidate = true;
         if (visitor(pnodeCandidate(descend))) {
           return true;
         }
       }
     }
-    return false;
+    return hasCandidate ? false : visitor(emptyCandidate());
   }
   }
 
