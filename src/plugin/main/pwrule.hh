@@ -4,6 +4,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 
 class PcodeWeaverRule {
   pcodeweaver::compiled::Rule compiled;
@@ -21,6 +22,10 @@ class PcodeWeaverRule {
   ghidra::int4 applyPattern(ghidra::Funcdata &data);
 
   ghidra::int4 applyAction(ghidra::Funcdata &data);
+
+public:
+  explicit PcodeWeaverRule(pcodeweaver::compiled::Rule compiled)
+      : compiled(std::move(compiled)) {}
 
   ghidra::int4 apply(ghidra::Funcdata &data);
 };
