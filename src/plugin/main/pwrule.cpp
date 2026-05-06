@@ -206,8 +206,8 @@ MatchState makeMatchState(std::size_t stepCount) {
 
 template <class Visitor>
 bool visitSourceCandidates(
-    const StepSource &source, const MatchState &state, ghidra::PcodeOp *root,
-    Visitor visitor
+    const StepSource &source, const MatchState &state, ghidra::Funcdata &data,
+    ghidra::PcodeOp *root, Visitor visitor
 ) {
   switch (source.kind) {
   case SourceKind::RootPnode:
@@ -215,6 +215,15 @@ bool visitSourceCandidates(
       return false;
     }
     return visitor(pnodeCandidate(root));
+
+  case SourceKind::ComponentRootPnode:
+    for (auto iter = data.beginOpAlive(); iter != data.endOpAlive(); ++iter) {
+      ghidra::PcodeOp *op = *iter;
+      if (op != nullptr) {
+        return visitor(pnodeCandidate(op));
+      }
+    }
+    return false;
 
   case SourceKind::PnodeInput: {
     ghidra::PcodeOp *from = getPnode(state, source.from);
@@ -309,7 +318,8 @@ bool stepKindMatches(const MatchStep &step, const Candidate &candidate) {
 }
 
 bool edgeCheckMatches(
-    const EdgeCheck &check, const MatchState &state, ghidra::PcodeOp *root
+    const EdgeCheck &check, const MatchState &state, ghidra::Funcdata &data,
+    ghidra::PcodeOp *root
 ) {
   Candidate expected;
   if (!getExpectedCandidate(state, check.expected, expected)) {
@@ -317,7 +327,7 @@ bool edgeCheckMatches(
   }
 
   return visitSourceCandidates(
-      check.source, state, root, [&](const Candidate &candidate) {
+      check.source, state, data, root, [&](const Candidate &candidate) {
         return sameCandidate(candidate, expected);
       }
   );
@@ -459,10 +469,11 @@ bool checkMatches(const Check &check, const MatchState &state) {
 }
 
 bool postBindChecksMatch(
-    const MatchStep &step, const MatchState &state, ghidra::PcodeOp *root
+    const MatchStep &step, const MatchState &state, ghidra::Funcdata &data,
+    ghidra::PcodeOp *root
 ) {
   for (const EdgeCheck &edgeCheck : step.edgeChecks) {
-    if (!edgeCheckMatches(edgeCheck, state, root)) {
+    if (!edgeCheckMatches(edgeCheck, state, data, root)) {
       return false;
     }
   }
@@ -475,8 +486,8 @@ bool postBindChecksMatch(
 }
 
 bool matchFromStep(
-    const PatternProgram &program, ghidra::PcodeOp *root, StepId stepId,
-    MatchState &state
+    const PatternProgram &program, ghidra::Funcdata &data,
+    ghidra::PcodeOp *root, StepId stepId, MatchState &state
 ) {
   if (static_cast<std::size_t>(stepId) >= program.steps.size()) {
     return true;
@@ -484,15 +495,15 @@ bool matchFromStep(
 
   const MatchStep &step = program.steps[static_cast<std::size_t>(stepId)];
   return visitSourceCandidates(
-      step.source, state, root, [&](const Candidate &candidate) {
+      step.source, state, data, root, [&](const Candidate &candidate) {
         if (alreadyBound(state, candidate) ||
             !stepKindMatches(step, candidate)) {
           return false;
         }
 
         bindStep(state, stepId, candidate);
-        if (postBindChecksMatch(step, state, root) &&
-            matchFromStep(program, root, stepId + 1, state)) {
+        if (postBindChecksMatch(step, state, data, root) &&
+            matchFromStep(program, data, root, stepId + 1, state)) {
           return true;
         }
         clearStep(state, stepId);
@@ -700,14 +711,12 @@ bool applyActionStep(
 ghidra::int4 PcodeWeaverRule::applyPatternToPnode(
     ghidra::Funcdata &data, ghidra::PcodeOp *op
 ) {
-  (void)data;
-
   if (op == nullptr || op->isDead()) {
     return 0;
   }
 
   MatchState state = makeMatchState(compiled.pattern.steps.size());
-  if (!matchFromStep(compiled.pattern, op, 0, state)) {
+  if (!matchFromStep(compiled.pattern, data, op, 0, state)) {
     return 0;
   }
 

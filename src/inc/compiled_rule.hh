@@ -19,6 +19,7 @@ enum class StepKind : std::uint8_t {
 
 enum class SourceKind : std::uint8_t {
   RootPnode,
+  ComponentRootPnode,
   PnodeInput,
   PnodeOutput,
   VarnodeDef,

@@ -560,49 +560,64 @@ Errorable<PatternCompileResult> compilePatternWithIds(
   std::unordered_set<Key, KeyHash> queued;
   std::queue<Key> queue;
 
-  Key root = keyOf(typedPnodes.front());
-  stepIds[root] = 0;
-  queued.insert(root);
-  program.steps.push_back(compileStep(
-      root,
-      compiled::StepSource{
-          .kind = compiled::SourceKind::RootPnode,
-          .from = 0,
-          .inputIndex = 0,
-      }
-  ));
+  auto compileComponent = [&](Key root, compiled::SourceKind sourceKind) {
+    stepIds[root] = static_cast<compiled::StepId>(program.steps.size());
+    queued.insert(root);
+    program.steps.push_back(compileStep(
+        root,
+        compiled::StepSource{
+            .kind = sourceKind,
+            .from = 0,
+            .inputIndex = 0,
+        }
+    ));
 
-  queue.push(root);
-  while (!queue.empty()) {
-    Key current = queue.front();
-    queue.pop();
-    compiled::StepId currentStep = stepIds.at(current);
+    queue.push(root);
+    while (!queue.empty()) {
+      Key current = queue.front();
+      queue.pop();
+      compiled::StepId currentStep = stepIds.at(current);
 
-    for (const NextNode &next : nextNodes(current, currentStep)) {
-      if (!shouldCompile(next.key, referencedGhosts)) {
-        continue;
+      for (const NextNode &next : nextNodes(current, currentStep)) {
+        if (!shouldCompile(next.key, referencedGhosts)) {
+          continue;
+        }
+        auto parent = parents.find(current);
+        if (parent != parents.end() && parent->second == next.key) {
+          continue;
+        }
+        if (queued.contains(next.key)) {
+          compiled::StepId expectedStep = stepIds.at(next.key);
+          compiled::StepId checkStep = std::max(currentStep, expectedStep);
+          program.steps[checkStep].edgeChecks.push_back(
+              compiled::EdgeCheck{
+                  .source = next.source,
+                  .expected = expectedStep,
+              }
+          );
+          continue;
+        }
+        queued.insert(next.key);
+        parents.emplace(next.key, current);
+        stepIds[next.key] = static_cast<compiled::StepId>(program.steps.size());
+        program.steps.push_back(compileStep(next.key, next.source));
+        queue.push(next.key);
       }
-      auto parent = parents.find(current);
-      if (parent != parents.end() && parent->second == next.key) {
-        continue;
-      }
-      if (queued.contains(next.key)) {
-        compiled::StepId expectedStep = stepIds.at(next.key);
-        compiled::StepId checkStep = std::max(currentStep, expectedStep);
-        program.steps[checkStep].edgeChecks.push_back(
-            compiled::EdgeCheck{
-                .source = next.source,
-                .expected = expectedStep,
-            }
-        );
-        continue;
-      }
-      queued.insert(next.key);
-      parents.emplace(next.key, current);
-      stepIds[next.key] = static_cast<compiled::StepId>(program.steps.size());
-      program.steps.push_back(compileStep(next.key, next.source));
-      queue.push(next.key);
     }
+  };
+
+  bool firstComponent = true;
+  for (const graph::GraphPnode *typedPnode : typedPnodes) {
+    Key root = keyOf(typedPnode);
+    if (queued.contains(root)) {
+      continue;
+    }
+    compileComponent(
+        root,
+        firstComponent ? compiled::SourceKind::RootPnode
+                       : compiled::SourceKind::ComponentRootPnode
+    );
+    firstComponent = false;
   }
 
   std::vector<std::string> disconnected;
@@ -614,7 +629,8 @@ Errorable<PatternCompileResult> compilePatternWithIds(
   if (!disconnected.empty()) {
     std::sort(disconnected.begin(), disconnected.end());
     std::ostringstream msg;
-    msg << "Pattern graph is disconnected; unsupported disconnected nodes:";
+    msg << "Pattern graph contains nodes that cannot be reached from any "
+           "typed pnode:";
     for (const std::string &name : disconnected) {
       msg << " " << name;
     }
