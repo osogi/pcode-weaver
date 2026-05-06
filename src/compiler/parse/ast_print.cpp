@@ -151,7 +151,8 @@ static void pnodeTerm(std::ostream &os, const PnodeTerm &t) {
           [&](const PnodeVarWithType &pt) {
             pnodeVar(os, pt.var);
             pnodeType(os, pt.ptype);
-          }
+          },
+          [&](const PnodeEmpty &) { os << "EMPTY"; }
       },
       t
   );

@@ -5,6 +5,17 @@
 static const size_t MAX_ARG_NEW_NODE = 256;
 
 namespace graph {
+ActionPcodeGraph::ActionPcodeGraph(const PcodeGraph &base)
+    : PcodeGraph(base), patternVarnodeDefEmpty() {
+  for (const auto &[_id, gv] : liveVarnodes()) {
+    const VarGraphNode *node = get_if_uniq<VarGraphNode>(gv);
+    if (node == nullptr || node->isGhost || !node->edges.def.has_value()) {
+      continue;
+    }
+    patternVarnodeDefEmpty.emplace(node->id, node->edges.def.value() == nullptr);
+  }
+}
+
 Errorable<void> NewOpGraphNode::addSpec(const ast::PnodeSpecTypeAndLoc &spec) {
   if (this->opTp.has_value()) {
     return err("Pnode " + this->id.getName() + " already specialised");
@@ -339,6 +350,32 @@ Errorable<void>
 ActionPcodeGraph::validateNewVarnode(const NewVarGraphNode &node) {
   return {};
 }
+
+Errorable<void> ActionPcodeGraph::validateExistingVarnodeDefStability(
+    const VarGraphNode &node
+) {
+  auto original = patternVarnodeDefEmpty.find(node.id);
+  if (original == patternVarnodeDefEmpty.end()) {
+    return {};
+  }
+  if (!node.edges.def.has_value()) {
+    return err(
+        "Varnode " + node.id.getName() +
+        " lost explicit define pnode state during action validation"
+    );
+  }
+
+  bool currentDefEmpty = node.edges.def.value() == nullptr;
+  if (currentDefEmpty == original->second) {
+    return {};
+  }
+
+  return err(
+      "Action cannot change whether varnode " + node.id.getName() +
+      " is defined by EMPTY pnode"
+  );
+}
+
 Errorable<void> ActionPcodeGraph::validateNewPnode(const NewOpGraphNode &node) {
   if (!node.opTp.has_value()) {
     return err(
@@ -357,6 +394,17 @@ Errorable<void> ActionPcodeGraph::validate() {
   if (!res.has_value()) {
     return res;
   }
+  for (const auto &[_id, gv] : liveVarnodes()) {
+    const VarGraphNode *node = get_if_uniq<VarGraphNode>(gv);
+    if (node == nullptr || newVarnodes.contains(node->id)) {
+      continue;
+    }
+    auto res = validateExistingVarnodeDefStability(*node);
+    if (!res.has_value()) {
+      return res;
+    }
+  }
+
   for (const auto &[_id, newVarnode] : newVarnodes) {
     auto res = validateNewVarnode(*newVarnode);
     if (!res.has_value()) {

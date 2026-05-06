@@ -204,15 +204,7 @@ GraphPnode *PcodeGraph::findOrCreatePnode(const ast::Id &id) {
 Errorable<void> PcodeGraph::validateVarnode(const GraphVarnode &gvn) {
   return std::visit(
       util::overloaded{
-          [&](const unq<VarGraphNode> &uptr) -> Errorable<void> {
-            const VarGraphNode &var = *uptr;
-            if (var.edges.def.has_value() && var.edges.def.value() == nullptr) {
-              return err(
-                  "Varnode " + var.id.getName() + " hasn't defined pnode"
-              );
-            }
-            return {};
-          },
+          [](const unq<VarGraphNode> &) -> Errorable<void> { return {}; },
           [&](const unq<ConstGraphNode> &uptr) -> Errorable<void> {
             const ConstGraphNode &cnst = *uptr;
 
@@ -380,6 +372,9 @@ Errorable<GraphPnode *> PcodeGraph::addPnodeTerm(const ast::PnodeTerm &pt) {
             }
             return gpn;
           },
+          [](const ast::PnodeEmpty &) -> Errorable<GraphPnode *> {
+            return nullptr;
+          },
       },
       pt
   );
@@ -396,9 +391,25 @@ PcodeGraph::addVarnodePattern(const ast::VarnodePattern &vp) {
             return addPnodePattern(defedBy.pp)
                 .and_then([&](GraphPnode *gp) -> Errorable<GraphVarnode *> {
                   GraphVarnode *gv = addVarnodeTerm(defedBy.v);
+                  auto &vIn = getEdges(gv).def;
+                  if (gp == nullptr) {
+                    if (vIn.has_value()) {
+                      if (vIn.value() == nullptr) {
+                        return gv;
+                      }
+                      return err(
+                          "Varnode " + toStr(gv) +
+                          " already had def pnode (" +
+                          unpackGP(*vIn.value())->id.getName() +
+                          ") during adding EMPTY as new one"
+                      );
+                    }
+                    vIn = nullptr;
+                    return gv;
+                  }
+
                   const unq<OpGraphNode> &og = unpackGP(*gp);
                   auto &pOut = og->edges.output;
-                  auto &vIn = getEdges(gv).def;
 
                   if (pOut != nullptr) {
                     return err(
@@ -410,7 +421,13 @@ PcodeGraph::addVarnodePattern(const ast::VarnodePattern &vp) {
                   pOut = gv;
 
                   if (vIn.has_value()) {
-
+                    if (vIn.value() == nullptr) {
+                      return err(
+                          "Varnode " + toStr(gv) +
+                          " already had EMPTY def pnode during adding " +
+                          og->id.getName() + " as new one"
+                      );
+                    }
                     return err(
                         "Varnode " + toStr(gv) + " already had def pnode (" +
                         unpackGP(*vIn.value())->id.getName() +
@@ -436,6 +453,13 @@ PcodeGraph::addPnodePattern(const ast::PnodePattern &pp) {
             return addVarnodePattern(nArg.vp).and_then([&](GraphVarnode *vn) {
               return addPnodeTerm(nArg.p).and_then(
                   [&](GraphPnode *pn) -> Errorable<GraphPnode *> {
+                    if (pn == nullptr) {
+                      return err(
+                          "EMPTY pnode cannot take " + toStr(vn) +
+                          " as an argument"
+                      );
+                    }
+
                     OpGraphNode &og = *unpackGP(*pn);
 
                     uint32_t n = nArg.num;
@@ -494,9 +518,11 @@ Errorable<void> PcodeGraph::addPattern(const ast::RulePattern &p) {
             auto res = addPnodePattern(x);
             if (!res.has_value()) {
               return std::unexpected(res.error());
-            } else {
-              return {};
             }
+            if (res.value() == nullptr) {
+              return err("EMPTY pnode pattern must define a varnode");
+            }
+            return {};
           },
           [&](const ast::BasicBlockPattern &x) -> Errorable<void> {
             addBBPattern(x);
@@ -651,17 +677,17 @@ void PcodeGraph::addGhostNodesOpGraphNode(Context &cntx, GraphPnode *gp) {
 }
 
 void PcodeGraph::addGhostNodesVarGraphNode(Context &cntx, GraphVarnode *gv) {
-  VarGraphNode *vg = get_if_uniq<VarGraphNode>(gv);
-  if (vg == nullptr || vg->isGhost || vg->edges.def.has_value()) {
-    return;
-  }
+  // VarGraphNode *vg = get_if_uniq<VarGraphNode>(gv);
+  // if (vg == nullptr || vg->isGhost || vg->edges.def.has_value()) {
+  //   return;
+  // }
 
-  GraphPnode *gp = createGhostPnode(cntx, "_ghost_def_of_" + vg->id.getName());
-  OpGraphNode *og = unpackGP(*gp).get();
-  if (og->edges.output == nullptr) {
-    og->edges.output = gv;
-    vg->edges.def = gp;
-  }
+  // GraphPnode *gp = createGhostPnode(cntx, "_ghost_def_of_" + vg->id.getName());
+  // OpGraphNode *og = unpackGP(*gp).get();
+  // if (og->edges.output == nullptr) {
+  //   og->edges.output = gv;
+  //   vg->edges.def = gp;
+  // }
 }
 
 void PcodeGraph::initGhostNodes(Context &cntx) {

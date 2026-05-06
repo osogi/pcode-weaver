@@ -190,8 +190,9 @@ struct PnodeVarWithType {
   PnodeVar var;
   PnodeType ptype;
 };
+struct PnodeEmpty {};
 
-using PnodeTerm = std::variant<PnodeVar, PnodeVarWithType>;
+using PnodeTerm = std::variant<PnodeVar, PnodeVarWithType, PnodeEmpty>;
 
 struct VarnodeDefedBy;
 struct PnodeThatTakeAsNthArg;

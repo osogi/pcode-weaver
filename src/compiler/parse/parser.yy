@@ -392,7 +392,8 @@ varnode_term:
 
 
 pnode_term:
-    pnode_var                           { $$ = $1; }
+    EMPTY_KEYWORD                       { $$ = ast::PnodeEmpty{}; }
+  | pnode_var                           { $$ = $1; }
   | pnode_var LPAREN  pnode_type RPAREN { $$ = ast::PnodeVarWithType{$1, $3}; };
 
 

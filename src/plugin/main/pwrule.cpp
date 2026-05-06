@@ -258,7 +258,7 @@ bool stepKindMatches(const MatchStep &step, const Candidate &candidate) {
   switch (step.kind) {
   case StepKind::AnyVarnode:
     return candidate.kind == CandidateKind::Varnode &&
-           candidate.vn != nullptr && !candidate.vn->isConstant();
+           candidate.vn != nullptr;
 
   case StepKind::Constant:
     return candidate.kind == CandidateKind::Varnode &&

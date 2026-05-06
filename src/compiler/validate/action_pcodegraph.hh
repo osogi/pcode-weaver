@@ -40,11 +40,12 @@ protected:
   Errorable<GraphPnode *> addPnodeAction(const ast::PnodeAction &pa);
   Errorable<void> addEmptyAction(const ast::EmptyAction &ea);
   Errorable<void> addAction(const ast::RuleAction &act);
+  Errorable<void> validateExistingVarnodeDefStability(const VarGraphNode &node);
   Errorable<void> validateNewVarnode(const NewVarGraphNode &node);
   Errorable<void> validateNewPnode(const NewOpGraphNode &node);
 
 public:
-  ActionPcodeGraph(const PcodeGraph &base) : PcodeGraph(base) {};
+  ActionPcodeGraph(const PcodeGraph &base);
   Errorable<void> addActions(const std::vector<ast::RuleAction> &acts);
   Errorable<void> validate();
   bool isNewVarnode(const ast::Id &id) const;
@@ -60,6 +61,8 @@ public:
   std::vector<ast::Id> getNewPnodeIds() const;
 
 protected:
+  std::unordered_map<ast::Id, bool> patternVarnodeDefEmpty;
+
   std::unordered_map<ast::Id, NewVarGraphNode *> newVarnodes;
 
   std::unordered_map<ast::Id, NewOpGraphNode *> newPnodes;

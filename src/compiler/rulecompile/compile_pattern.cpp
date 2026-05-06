@@ -15,7 +15,7 @@ namespace {
 
 namespace compiled = pcodeweaver::compiled;
 
-enum class KeyKind { Varnode, Pnode };
+enum class KeyKind { Varnode, Pnode, EmptyDefPnode };
 
 struct Key {
   KeyKind kind;
@@ -41,6 +41,10 @@ struct NextNode {
 
 Key keyOf(const graph::GraphVarnode *gv) { return {KeyKind::Varnode, gv}; }
 Key keyOf(const graph::GraphPnode *gp) { return {KeyKind::Pnode, gp}; }
+// A virtual node used only to compile `EMPTY -> v` into a VarnodeDef step.
+Key emptyDefPnodeKeyOf(const graph::GraphVarnode *gv) {
+  return {KeyKind::EmptyDefPnode, gv};
+}
 
 const graph::GraphVarnode *asVarnode(Key key) {
   return static_cast<const graph::GraphVarnode *>(key.ptr);
@@ -54,12 +58,18 @@ std::string nameOf(Key key) {
   if (key.kind == KeyKind::Pnode) {
     return graph::unpackGP(*asPnode(key))->id.getName();
   }
+  if (key.kind == KeyKind::EmptyDefPnode) {
+    return "EMPTY def of " + graph::toStr(asVarnode(key));
+  }
   return graph::toStr(asVarnode(key));
 }
 
 bool isGhost(Key key) {
   if (key.kind == KeyKind::Pnode) {
     return graph::unpackGP(*asPnode(key))->isGhost;
+  }
+  if (key.kind == KeyKind::EmptyDefPnode) {
+    return false;
   }
   return std::visit(
       [](const auto &node) { return node->isGhost; }, *asVarnode(key)
@@ -68,6 +78,10 @@ bool isGhost(Key key) {
 
 std::vector<NextNode> nextNodes(Key key, compiled::StepId from) {
   std::vector<NextNode> result;
+
+  if (key.kind == KeyKind::EmptyDefPnode) {
+    return result;
+  }
 
   if (key.kind == KeyKind::Pnode) {
     const graph::OpGraphNode &pn = *graph::unpackGP(*asPnode(key));
@@ -109,7 +123,18 @@ std::vector<NextNode> nextNodes(Key key, compiled::StepId from) {
   }
 
   const graph::VarnodeEdges &edges = graph::getEdges(asVarnode(key));
-  if (edges.def.has_value() && edges.def.value() != nullptr) {
+  if (edges.def.has_value() && edges.def.value() == nullptr) {
+    result.push_back(
+        NextNode{
+            .key = emptyDefPnodeKeyOf(asVarnode(key)),
+            .source = compiled::StepSource{
+                .kind = compiled::SourceKind::VarnodeDef,
+                .from = from,
+                .inputIndex = 0,
+            },
+        }
+    );
+  } else if (edges.def.has_value() && edges.def.value() != nullptr) {
     result.push_back(
         NextNode{
             .key = keyOf(edges.def.value()),
@@ -153,6 +178,11 @@ std::vector<NextNode> nextNodes(Key key, compiled::StepId from) {
 compiled::MatchStep compileStep(Key key, compiled::StepSource source) {
   compiled::MatchStep step;
   step.source = source;
+
+  if (key.kind == KeyKind::EmptyDefPnode) {
+    step.kind = compiled::StepKind::Empty;
+    return step;
+  }
 
   if (key.kind == KeyKind::Pnode) {
     const graph::OpGraphNode &pn = *graph::unpackGP(*asPnode(key));
