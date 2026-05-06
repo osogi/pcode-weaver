@@ -41,7 +41,7 @@ struct NextNode {
 
 Key keyOf(const graph::GraphVarnode *gv) { return {KeyKind::Varnode, gv}; }
 Key keyOf(const graph::GraphPnode *gp) { return {KeyKind::Pnode, gp}; }
-// A virtual node used only to compile `EMPTY -> v` into a VarnodeDef step.
+// A virtual node used only to compile `OPEMPTY -> v` into a VarnodeDef step.
 Key emptyDefPnodeKeyOf(const graph::GraphVarnode *gv) {
   return {KeyKind::EmptyDefPnode, gv};
 }
@@ -59,7 +59,7 @@ std::string nameOf(Key key) {
     return graph::unpackGP(*asPnode(key))->id.getName();
   }
   if (key.kind == KeyKind::EmptyDefPnode) {
-    return "EMPTY def of " + graph::toStr(asVarnode(key));
+    return "OPEMPTY def of " + graph::toStr(asVarnode(key));
   }
   return graph::toStr(asVarnode(key));
 }

@@ -64,7 +64,8 @@
 
 %token AFTER_KEYWORD "AFTER"
 %token BEFORE_KEYWORD "BEFORE"
-%token EMPTY_KEYWORD "EMPTY"
+%token VEMPTY_KEYWORD "VEMPTY"
+%token OPEMPTY_KEYWORD "OPEMPTY"
 %token NO_OUT_KEYWORD "NoOut"
 %token NO_OUT_OR_KEYWORD "NoOutOr"
 %token TRUE_KEYWORD "True"
@@ -386,14 +387,14 @@ actions:
 // Patterns
 
 varnode_term:
-    EMPTY_KEYWORD                           { $$ = ast::VarnodeEmpty{}; }
+    VEMPTY_KEYWORD                          { $$ = ast::VarnodeEmpty{}; }
   | varnode_var                             { $$ = $1; }
   | varnode_var LPAREN  varnode_type RPAREN { $$ = ast::VarnodeVarWithType{$1, $3}; }
   | varnode_const                           { $$ = $1; }
 
 
 pnode_term:
-    EMPTY_KEYWORD                       { $$ = ast::PnodeEmpty{}; }
+    OPEMPTY_KEYWORD                     { $$ = ast::PnodeEmpty{}; }
   | pnode_var                           { $$ = $1; }
   | pnode_var LPAREN  pnode_type RPAREN { $$ = ast::PnodeVarWithType{$1, $3}; };
 
@@ -450,7 +451,7 @@ rule_pattern:
 // Actions
 
 varnode_action_term:
-    EMPTY_KEYWORD                           { $$ = ast::VarnodeEmpty{}; }
+    VEMPTY_KEYWORD                          { $$ = ast::VarnodeEmpty{}; }
   | varnode_var                             { $$ = $1; }
   | varnode_var[vv] LPAREN size[sz] RPAREN  { $$ = ast::VarnodeSpecSize{$vv, $sz}; }
 

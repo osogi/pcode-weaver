@@ -140,7 +140,7 @@ static void varnodeTerm(std::ostream &os, const VarnodeTerm &t) {
             varnodeVar(os, vt.var);
             varnodeType(os, vt.vntype);
           },
-          [&](const VarnodeEmpty &) { os << "EMPTY"; },
+          [&](const VarnodeEmpty &) { os << "VEMPTY"; },
           [&](const VarnodeConst &c) { varnodeConst(os, c); }
       },
       t
@@ -155,7 +155,7 @@ static void pnodeTerm(std::ostream &os, const PnodeTerm &t) {
             pnodeVar(os, pt.var);
             pnodeType(os, pt.ptype);
           },
-          [&](const PnodeEmpty &) { os << "EMPTY"; }
+          [&](const PnodeEmpty &) { os << "OPEMPTY"; }
       },
       t
   );
@@ -241,7 +241,7 @@ static void varnodeActionTerm(std::ostream &os, const VarnodeActionTerm &t) {
   std::visit(
       util::overloaded{
           [&](const VarnodeVar &v) { varnodeVar(os, v); },
-          [&](const VarnodeEmpty &) { os << "EMPTY"; },
+          [&](const VarnodeEmpty &) { os << "VEMPTY"; },
           [&](const VarnodeSpecSize &n) {
             varnodeVar(os, n.newVar);
             os << "(";
