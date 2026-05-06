@@ -13,6 +13,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace {
@@ -20,6 +21,7 @@ namespace {
 namespace fs = std::filesystem;
 
 constexpr std::string_view DEFAULT_RULE_EXTENSION = ".pwrule";
+constexpr int OPT_PRINT_CONDITIONS = 1000;
 
 struct CliOptions {
   std::vector<fs::path> inputs;
@@ -28,6 +30,13 @@ struct CliOptions {
   bool useRuleDirectory = false;
   bool checkOnly = false;
   bool verbose = false;
+  bool printConditions = false;
+};
+
+struct CompileResult {
+  pcodeweaver::compiled::Rule rule;
+  std::vector<speccond::SpecCondition> userRuntimeConditions;
+  std::vector<speccond::SpecCondition> requiredConditions;
 };
 
 void printUsage(std::ostream &out, std::string_view program) {
@@ -39,6 +48,7 @@ void printUsage(std::ostream &out, std::string_view program) {
       << "      --rules-dir          Write compiled rules into the plugin rule "
          "directory\n"
       << "      --check              Parse, validate, and compile without writing\n"
+      << "      --print-conditions   Print generated user and required conditions\n"
       << "  -v, --verbose            Print compile details\n"
       << "  -h, --help               Show this help\n"
       << "\n"
@@ -58,6 +68,7 @@ parseArgs(int argc, char *argv[], CliOptions &options, bool &showHelp) {
       {"output-dir", required_argument, nullptr, 'd'},
       {"rules-dir", no_argument, nullptr, 'r'},
       {"check", no_argument, nullptr, 'c'},
+      {"print-conditions", no_argument, nullptr, OPT_PRINT_CONDITIONS},
       {"verbose", no_argument, nullptr, 'v'},
       {"help", no_argument, nullptr, 'h'},
       {nullptr, 0, nullptr, 0},
@@ -82,6 +93,9 @@ parseArgs(int argc, char *argv[], CliOptions &options, bool &showHelp) {
       break;
     case 'r':
       options.useRuleDirectory = true;
+      break;
+    case OPT_PRINT_CONDITIONS:
+      options.printConditions = true;
       break;
     case 'o':
       options.output = fs::path{optarg};
@@ -178,7 +192,35 @@ bool writeCompiledRule(
   }
 }
 
-Errorable<pcodeweaver::compiled::Rule> compileRule(const fs::path &input) {
+void printConditionList(
+    std::ostream &out,
+    std::string_view label,
+    const std::vector<speccond::SpecCondition> &conditions
+) {
+  out << "  " << label << ":\n";
+  if (conditions.empty()) {
+    out << "    <none>\n";
+    return;
+  }
+
+  for (const speccond::SpecCondition &condition : conditions) {
+    out << "    " << condition << "\n";
+  }
+}
+
+void printConditions(
+    std::ostream &out,
+    const fs::path &input,
+    const CompileResult &result
+) {
+  out << input.string() << ":\n";
+  printConditionList(
+      out, "generated user conditions", result.userRuntimeConditions
+  );
+  printConditionList(out, "required conditions", result.requiredConditions);
+}
+
+Errorable<CompileResult> compileRule(const fs::path &input) {
   yy::Driver parseDriver;
   if (parseDriver.parse(input) != 0) {
     return err("parse failed");
@@ -202,7 +244,16 @@ Errorable<pcodeweaver::compiled::Rule> compileRule(const fs::path &input) {
       .runtimeValueRequirements = validateDriver.getRuntimeValueRequirements(),
   });
 
-  return compileDriver.compile();
+  auto compileRes = compileDriver.compile();
+  if (!compileRes.has_value()) {
+    return std::unexpected(compileRes.error());
+  }
+
+  return CompileResult{
+      .rule = std::move(*compileRes),
+      .userRuntimeConditions = validateDriver.getURTC(),
+      .requiredConditions = validateDriver.getRQC(),
+  };
 }
 
 } // namespace
@@ -234,8 +285,12 @@ int main(int argc, char *argv[]) {
 
     if (options.verbose) {
       std::cout << input.string() << ": compiled "
-                << compileRes->pattern.steps.size() << " pattern steps, "
-                << compileRes->action.steps.size() << " action steps\n";
+                << compileRes->rule.pattern.steps.size() << " pattern steps, "
+                << compileRes->rule.action.steps.size() << " action steps\n";
+    }
+
+    if (options.printConditions) {
+      printConditions(std::cout, input, *compileRes);
     }
 
     if (options.checkOnly) {
@@ -244,7 +299,7 @@ int main(int argc, char *argv[]) {
 
     const fs::path output = outputPathFor(options, input);
     std::string error;
-    if (!writeCompiledRule(*compileRes, output, error)) {
+    if (!writeCompiledRule(compileRes->rule, output, error)) {
       std::cerr << input.string() << ": failed to write " << output.string()
                 << ": " << error << "\n";
       hadError = true;
