@@ -468,6 +468,7 @@ bool ActionPcodeGraph::containsNewNodeValue(
             return containsNewNodeValue(condition.a) ||
                    containsNewNodeValue(condition.b);
           },
+          [](const speccond::OffsetEqual &) { return false; },
           [this](const speccond::BBEqual &condition) {
             return containsNewNodeValue(condition.a) ||
                    containsNewNodeValue(condition.b);

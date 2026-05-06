@@ -210,7 +210,7 @@ boolean:
 
 size: 
     IDENTIFIER  { $$ = driver.cntx.sizeVarFactory.createId($1, true); }
-  | UNDERSCORE  { $$ = driver.cntx.sizeVarFactory.createId(false); };
+  | UNDERSCORE  { $$ = driver.cntx.sizeVarFactory.createId(false); }
   | NUMBER      { $$ = ghidra::int4($1);}
 
 bb_var:
@@ -228,7 +228,8 @@ pnode_var:
 
 
 varnode_type:
-  size COMMA bb_var { $$ = ast::VarnodeType{$1, $3};}
+    size COMMA bb_var { $$ = ast::VarnodeType{$1, $3};}
+  | size COMMA bb_var COMMA NUMBER { $$ = ast::VarnodeType{$1, $3, $5};}
 
 /*
 in_varnode_cond:

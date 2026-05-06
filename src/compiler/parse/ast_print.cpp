@@ -41,6 +41,9 @@ static void varnodeType(std::ostream &os, const VarnodeType &vt) {
   size(os, vt.size);
   os << ", ";
   bbVar(os, vt.declarationBB);
+  if (vt.offset.has_value()) {
+    os << ", " << vt.offset.value();
+  }
   os << ")";
 }
 

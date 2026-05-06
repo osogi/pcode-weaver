@@ -10,7 +10,7 @@ Errorable<void> Inferencer::inferenceVarnode(
   const graph::VarGraphNode *vg = get_if_uniq<graph::VarGraphNode>(&gvn);
   if (vg != nullptr) {
     auto def = vg->edges.def;
-    if (def.has_value()) {
+    if (def.has_value() && def.value() != nullptr) {
       graph::OpGraphNode &og = *graph::unpackGP(*def.value());
       return addBBEqual(
           specvalues::BBOfVarnode(vg->id), specvalues::BBOfPnode(og.id), conds
@@ -174,6 +174,13 @@ Errorable<void> Inferencer::inferenceVarnodeUserConds(
     res = addSizeEqualSizeAndVarnode(vt.size, &gvn, tmpConds);
     if (!res.has_value()) {
       return res;
+    }
+
+    if (vt.offset.has_value() && conds != nullptr) {
+      conds->push_back(speccond::OffsetEqual{
+          specvalues::OffsetOfVarnode(vg->id),
+          specvalues::ConcreateOffset(vt.offset.value())
+      });
     }
   }
   return {};

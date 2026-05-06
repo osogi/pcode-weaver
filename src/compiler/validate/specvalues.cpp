@@ -9,10 +9,17 @@ std::ostream &operator<<(std::ostream &os, const DefinedByIdNode &val) {
 std::ostream &operator<<(std::ostream &os, const SpecValueSize &val) {
   return printVariant(os, val);
 };
+std::ostream &operator<<(std::ostream &os, const SpecValueOffset &val) {
+  return printVariant(os, val);
+};
 std::ostream &operator<<(std::ostream &os, const SpecValueBB &val) {
   return printVariant(os, val);
 };
 std::ostream &operator<<(std::ostream &os, const ConcreateSize &val) {
+  os << val.value;
+  return os;
+}
+std::ostream &operator<<(std::ostream &os, const ConcreateOffset &val) {
   os << val.value;
   return os;
 }

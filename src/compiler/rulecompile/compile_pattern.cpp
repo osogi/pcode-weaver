@@ -257,6 +257,19 @@ void collectSizeValueGhost(
   }
 }
 
+void collectOffsetValueGhost(
+    const specvalues::SpecValueOffset &value,
+    const std::unordered_map<ast::Id, Key> &varnodeKeys,
+    std::unordered_set<Key, KeyHash> &referencedGhosts
+) {
+  if (const auto *offset = std::get_if<specvalues::OffsetOfVarnode>(&value)) {
+    auto it = varnodeKeys.find(offset->nodeId);
+    if (it != varnodeKeys.end() && isGhost(it->second)) {
+      referencedGhosts.insert(it->second);
+    }
+  }
+}
+
 void collectBBValueGhost(
     const specvalues::SpecValueBB &value,
     const std::unordered_map<ast::Id, Key> &varnodeKeys,
@@ -294,6 +307,10 @@ void collectReferencedGhosts(
             [&](const speccond::SizeEqual &cond) {
               collectSizeValueGhost(cond.a, varnodeKeys, referencedGhosts);
               collectSizeValueGhost(cond.b, varnodeKeys, referencedGhosts);
+            },
+            [&](const speccond::OffsetEqual &cond) {
+              collectOffsetValueGhost(cond.a, varnodeKeys, referencedGhosts);
+              collectOffsetValueGhost(cond.b, varnodeKeys, referencedGhosts);
             },
             [&](const speccond::BBEqual &cond) {
               collectBBValueGhost(
@@ -387,6 +404,45 @@ Errorable<CompiledValue> compileSizeValue(
                 .value =
                     compiled::CheckValue{
                         .kind = compiled::CheckValueKind::VarnodeSize,
+                        .step = step.value(),
+                        .constant = 0,
+                    },
+                .step = step.value(),
+            };
+          },
+      },
+      value
+  );
+}
+
+Errorable<CompiledValue> compileOffsetValue(
+    const specvalues::SpecValueOffset &value,
+    const std::unordered_map<ast::Id, compiled::StepId> &varnodes
+) {
+  return std::visit(
+      util::overloaded{
+          [](const specvalues::ConcreateOffset &offset)
+              -> Errorable<CompiledValue> {
+            return CompiledValue{
+                .value =
+                    compiled::CheckValue{
+                        .kind = compiled::CheckValueKind::ConstantOffset,
+                        .step = 0,
+                        .constant = static_cast<std::int64_t>(offset.value),
+                    },
+                .step = std::nullopt,
+            };
+          },
+          [&](const specvalues::OffsetOfVarnode &offset)
+              -> Errorable<CompiledValue> {
+            auto step = lookupStep(varnodes, offset.nodeId, "varnode");
+            if (!step.has_value()) {
+              return std::unexpected(step.error());
+            }
+            return CompiledValue{
+                .value =
+                    compiled::CheckValue{
+                        .kind = compiled::CheckValueKind::VarnodeOffset,
                         .step = step.value(),
                         .constant = 0,
                     },
@@ -586,6 +642,25 @@ Errorable<PatternCompileResult> compilePatternWithIds(
               return std::pair{
                   compiled::Check{
                       .kind = compiled::CheckKind::SizeEqual,
+                      .left = left->value,
+                      .right = right->value,
+                  },
+                  attachPoint(left->step, right->step)
+              };
+            },
+            [&](const speccond::OffsetEqual &cond)
+                -> Errorable<std::pair<compiled::Check, compiled::StepId>> {
+              auto left = compileOffsetValue(cond.a, varnodeSteps);
+              if (!left.has_value()) {
+                return std::unexpected(left.error());
+              }
+              auto right = compileOffsetValue(cond.b, varnodeSteps);
+              if (!right.has_value()) {
+                return std::unexpected(right.error());
+              }
+              return std::pair{
+                  compiled::Check{
+                      .kind = compiled::CheckKind::OffsetEqual,
                       .left = left->value,
                       .right = right->value,
                   },

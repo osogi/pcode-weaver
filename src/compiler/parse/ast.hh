@@ -6,7 +6,9 @@
 #include <ghidra/opcodes.hh>
 #include <ghidra/types.h>
 
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -111,6 +113,7 @@ struct BasicBlockVar {
 struct VarnodeType {
   Size size;
   BasicBlockVar declarationBB;
+  std::optional<std::uint64_t> offset;
   // Identifiable<bool> isDefedByPnode;
 };
 

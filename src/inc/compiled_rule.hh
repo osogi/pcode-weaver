@@ -27,15 +27,18 @@ enum class SourceKind : std::uint8_t {
 
 enum class CheckKind : std::uint8_t {
   SizeEqual,
+  OffsetEqual,
   BasicBlockEqual,
   BasicBlockDominates,
 };
 
 enum class CheckValueKind : std::uint8_t {
   ConstantSize,
+  ConstantOffset,
   VarnodeSize,
   VarnodeBasicBlock,
   PnodeBasicBlock,
+  VarnodeOffset,
 };
 
 enum class ActionNodeKind : std::uint8_t {

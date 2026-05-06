@@ -302,6 +302,7 @@ bool edgeCheckMatches(
 CheckScalar evalScalar(const CheckValue &value, const MatchState &state) {
   switch (value.kind) {
   case CheckValueKind::ConstantSize:
+  case CheckValueKind::ConstantOffset:
     return {true, value.constant};
 
   case CheckValueKind::VarnodeSize: {
@@ -310,6 +311,14 @@ CheckScalar evalScalar(const CheckValue &value, const MatchState &state) {
       return {};
     }
     return {true, vn->getSize()};
+  }
+
+  case CheckValueKind::VarnodeOffset: {
+    ghidra::Varnode *vn = getVarnode(state, value.step);
+    if (vn == nullptr) {
+      return {};
+    }
+    return {true, static_cast<std::int64_t>(vn->getOffset())};
   }
 
   case CheckValueKind::VarnodeBasicBlock:
@@ -326,6 +335,7 @@ CheckScalar evalScalar(
 ) {
   switch (value.kind) {
   case CheckValueKind::ConstantSize:
+  case CheckValueKind::ConstantOffset:
     return {true, value.constant};
 
   case CheckValueKind::VarnodeSize: {
@@ -334,6 +344,14 @@ CheckScalar evalScalar(
       return {};
     }
     return {true, iter->second->getSize()};
+  }
+
+  case CheckValueKind::VarnodeOffset: {
+    auto iter = varnodes.find(value.step);
+    if (iter == varnodes.end() || iter->second == nullptr) {
+      return {};
+    }
+    return {true, static_cast<std::int64_t>(iter->second->getOffset())};
   }
 
   case CheckValueKind::VarnodeBasicBlock:
@@ -363,7 +381,9 @@ CheckBlock evalBlock(const CheckValue &value, const MatchState &state) {
   }
 
   case CheckValueKind::ConstantSize:
+  case CheckValueKind::ConstantOffset:
   case CheckValueKind::VarnodeSize:
+  case CheckValueKind::VarnodeOffset:
     return {};
   }
 
@@ -373,6 +393,12 @@ CheckBlock evalBlock(const CheckValue &value, const MatchState &state) {
 bool checkMatches(const Check &check, const MatchState &state) {
   switch (check.kind) {
   case CheckKind::SizeEqual: {
+    const CheckScalar left = evalScalar(check.left, state);
+    const CheckScalar right = evalScalar(check.right, state);
+    return left.valid && right.valid && left.value == right.value;
+  }
+
+  case CheckKind::OffsetEqual: {
     const CheckScalar left = evalScalar(check.left, state);
     const CheckScalar right = evalScalar(check.right, state);
     return left.valid && right.valid && left.value == right.value;
