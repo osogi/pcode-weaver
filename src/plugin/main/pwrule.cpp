@@ -1,10 +1,12 @@
 #include "pwrule.hh"
 
 #include <ghidra/block.hh>
+#include <ghidra/fspec.hh>
 #include <ghidra/op.hh>
 #include <ghidra/varnode.hh>
 
 #include <cstdint>
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -56,6 +58,28 @@ struct CheckBlock {
   bool valid = false;
   const ghidra::FlowBlock *block = nullptr;
 };
+
+CheckScalar evalVarnodeOffset(ghidra::Varnode *vn) {
+  if (vn == nullptr) {
+    return {};
+  }
+
+  const ghidra::Address &addr = vn->getAddr();
+  if (addr.getSpace() != nullptr &&
+      addr.getSpace()->getType() == ghidra::IPTR_FSPEC) {
+    ghidra::FuncCallSpecs *callSpecs =
+        ghidra::FuncCallSpecs::getFspecFromConst(addr);
+    if (callSpecs == nullptr || callSpecs->getEntryAddress().isInvalid()) {
+      return {};
+    }
+    return {
+        true,
+        static_cast<std::int64_t>(callSpecs->getEntryAddress().getOffset())
+    };
+  }
+
+  return {true, static_cast<std::int64_t>(vn->getOffset())};
+}
 
 Candidate emptyCandidate() { return {}; }
 
@@ -318,7 +342,8 @@ CheckScalar evalScalar(const CheckValue &value, const MatchState &state) {
     if (vn == nullptr) {
       return {};
     }
-    return {true, static_cast<std::int64_t>(vn->getOffset())};
+    const CheckScalar offset = evalVarnodeOffset(vn);
+    return offset;
   }
 
   case CheckValueKind::VarnodeBasicBlock:
@@ -351,7 +376,7 @@ CheckScalar evalScalar(
     if (iter == varnodes.end() || iter->second == nullptr) {
       return {};
     }
-    return {true, static_cast<std::int64_t>(iter->second->getOffset())};
+    return evalVarnodeOffset(iter->second);
   }
 
   case CheckValueKind::VarnodeBasicBlock:
