@@ -124,6 +124,23 @@ struct CondBBDominate {
   }
 };
 
+struct CondBBOutgoingEdge {
+  ast::BasicBlockVar a;
+  ast::BasicBlockVar b;
+  std::uint32_t outIndex;
+
+  CondBBOutgoingEdge(
+      const ast::BasicBlockVar &first, const ast::BasicBlockVar &second,
+      std::uint32_t index
+  )
+      : a(first), b(second), outIndex(index) {};
+
+  std::string toString() const {
+    return a.id.getName() + " ->(" + std::to_string(outIndex) + ") " +
+           b.id.getName();
+  }
+};
+
 class PcodeGraph {
   friend class infer::Inferencer;
 
@@ -205,6 +222,7 @@ protected:
   std::unordered_map<ast::Id, GraphPnode *> pnodes;
 
   std::vector<CondBBDominate> bbUserConditions;
+  std::vector<CondBBOutgoingEdge> bbEdgeUserConditions;
 
 public:
   auto liveNodes() const {

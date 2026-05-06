@@ -328,6 +328,14 @@ void collectReferencedGhosts(
                   cond.b, varnodeKeys, pnodeKeys, referencedGhosts
               );
             },
+            [&](const speccond::BBOutgoingEdge &cond) {
+              collectBBValueGhost(
+                  cond.a, varnodeKeys, pnodeKeys, referencedGhosts
+              );
+              collectBBValueGhost(
+                  cond.b, varnodeKeys, pnodeKeys, referencedGhosts
+              );
+            },
         },
         condition
     );
@@ -701,6 +709,26 @@ Errorable<PatternCompileResult> compilePatternWithIds(
                       .kind = compiled::CheckKind::BasicBlockDominates,
                       .left = left->value,
                       .right = right->value,
+                  },
+                  attachPoint(left->step, right->step)
+              };
+            },
+            [&](const speccond::BBOutgoingEdge &cond)
+                -> Errorable<std::pair<compiled::Check, compiled::StepId>> {
+              auto left = compileBBValue(cond.a, varnodeSteps, pnodeSteps);
+              if (!left.has_value()) {
+                return std::unexpected(left.error());
+              }
+              auto right = compileBBValue(cond.b, varnodeSteps, pnodeSteps);
+              if (!right.has_value()) {
+                return std::unexpected(right.error());
+              }
+              return std::pair{
+                  compiled::Check{
+                      .kind = compiled::CheckKind::BasicBlockOutgoingEdge,
+                      .left = left->value,
+                      .right = right->value,
+                      .edgeIndex = cond.outIndex,
                   },
                   attachPoint(left->step, right->step)
               };

@@ -201,6 +201,7 @@ struct VarnodeDefedBy;
 struct PnodeThatTakeAsNthArg;
 // struct PnodeThatTakeAsSomeArg;
 struct BasicBlockDominatedBy;
+struct BasicBlockOutgoingEdge;
 
 using VarnodePattern = std::variant<
     VarnodeTerm,        // vname OR vname(conditions) OR EMPTY
@@ -213,8 +214,9 @@ using PnodePattern = std::variant<
     >;
 
 using BasicBlockPattern = std::variant<
-    BasicBlockVar,             // bbname
-    Box<BasicBlockDominatedBy> //  bb_pattern <= bbname
+    BasicBlockVar,              // bbname
+    Box<BasicBlockDominatedBy>, // bb_pattern <= bbname
+    Box<BasicBlockOutgoingEdge> // bb_pattern ->(N) bbname
     >;
 
 struct VarnodeDefedBy {
@@ -235,6 +237,12 @@ struct PnodeThatTakeAsNthArg {
 
 struct BasicBlockDominatedBy {
   BasicBlockPattern bbp;
+  BasicBlockVar bb;
+};
+
+struct BasicBlockOutgoingEdge {
+  BasicBlockPattern bbp;
+  uint32_t outIndex;
   BasicBlockVar bb;
 };
 

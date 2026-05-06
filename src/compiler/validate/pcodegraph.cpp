@@ -92,7 +92,8 @@ bool &isGhost(GraphVarnode *gv) {
 bool &isGhost(GraphPnode *gp) { return unpackGP(*gp)->isGhost; }
 
 PcodeGraph::PcodeGraph(const PcodeGraph &other)
-    : nodes(), varnodes(), pnodes(), bbUserConditions(other.bbUserConditions) {
+    : nodes(), varnodes(), pnodes(), bbUserConditions(other.bbUserConditions),
+      bbEdgeUserConditions(other.bbEdgeUserConditions) {
   std::unordered_map<const GraphVarnode *, GraphVarnode *> varnodeCopies;
   std::unordered_map<const GraphPnode *, GraphPnode *> pnodeCopies;
 
@@ -497,6 +498,16 @@ PcodeGraph::addBBPattern(const ast::BasicBlockPattern &bbp) {
             const ast::BasicBlockVar &first = addBBPattern(bbdb.bbp);
             const ast::BasicBlockVar &second = bbdb.bb;
             bbUserConditions.push_back(CondBBDominate(first, second));
+            return second;
+          },
+          [this](const ast::Box<ast::BasicBlockOutgoingEdge> &b)
+              -> const ast::BasicBlockVar & {
+            const ast::BasicBlockOutgoingEdge &edge = *b;
+            const ast::BasicBlockVar &first = addBBPattern(edge.bbp);
+            const ast::BasicBlockVar &second = edge.bb;
+            bbEdgeUserConditions.push_back(
+                CondBBOutgoingEdge(first, second, edge.outIndex)
+            );
             return second;
           }
       },

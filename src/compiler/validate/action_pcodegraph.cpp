@@ -477,6 +477,10 @@ bool ActionPcodeGraph::containsNewNodeValue(
             return containsNewNodeValue(condition.a) ||
                    containsNewNodeValue(condition.b);
           },
+          [this](const speccond::BBOutgoingEdge &condition) {
+            return containsNewNodeValue(condition.a) ||
+                   containsNewNodeValue(condition.b);
+          },
       },
       condition
   );

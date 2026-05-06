@@ -442,6 +442,17 @@ bool checkMatches(const Check &check, const MatchState &state) {
     return left.valid && right.valid && left.block != nullptr &&
            right.block != nullptr && left.block->dominates(right.block);
   }
+
+  case CheckKind::BasicBlockOutgoingEdge: {
+    const CheckBlock left = evalBlock(check.left, state);
+    const CheckBlock right = evalBlock(check.right, state);
+    return left.valid && right.valid && left.block != nullptr &&
+           right.block != nullptr &&
+           check.edgeIndex <
+               static_cast<std::uint32_t>(left.block->sizeOut()) &&
+           left.block->getOut(static_cast<ghidra::int4>(check.edgeIndex)) ==
+               right.block;
+  }
   }
 
   return false;

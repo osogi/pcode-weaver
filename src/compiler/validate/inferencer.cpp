@@ -4,6 +4,20 @@
 using graph::unq;
 
 namespace infer {
+Errorable<specvalues::SpecValueBB> Inferencer::resolveBBSpec(
+    const ast::Id &id
+) {
+  auto found = bbSolver.find(id);
+  auto *spec = std::get_if<specvalues::SpecValueBB>(&found);
+  if (spec == nullptr) {
+    std::ostringstream s;
+    s << "TypeVariable " << id
+      << " don't have specialised value, instead it equal to " << found;
+    return err(s.str());
+  }
+  return *spec;
+}
+
 Errorable<void> Inferencer::inferenceVarnode(
     const graph::GraphVarnode &gvn, CondVectType *conds
 ) {
@@ -230,6 +244,24 @@ Errorable<void> Inferencer::inferenceUserConds(
     auto res = addBBDominate(bbc.a.id, bbc.b.id, conds);
     if (!res.has_value()) {
       return res;
+    }
+  }
+
+  if (conds != nullptr) {
+    for (const auto &edge : pgraph.bbEdgeUserConditions) {
+      auto left = resolveBBSpec(edge.a.id);
+      if (!left.has_value()) {
+        return std::unexpected(left.error());
+      }
+      auto right = resolveBBSpec(edge.b.id);
+      if (!right.has_value()) {
+        return std::unexpected(right.error());
+      }
+      conds->push_back(speccond::BBOutgoingEdge{
+          .a = left.value(),
+          .b = right.value(),
+          .outIndex = edge.outIndex,
+      });
     }
   }
 

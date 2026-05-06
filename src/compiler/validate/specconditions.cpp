@@ -14,6 +14,9 @@ std::ostream &operator<<(std::ostream &os, const BBEqual &val) {
 std::ostream &operator<<(std::ostream &os, const BBDominate &val) {
   return os << val.a << "<=" << val.b;
 }
+std::ostream &operator<<(std::ostream &os, const BBOutgoingEdge &val) {
+  return os << val.a << "->(" << val.outIndex << ")" << val.b;
+}
 std::ostream &operator<<(std::ostream &os, const SpecCondition &val) {
   return printVariant(os, val);
 };

@@ -110,6 +110,7 @@ protected:
   ) {
     return addRelation<BBDominatePolicy>(bbSolver, a, b, conds);
   }
+  Errorable<specvalues::SpecValueBB> resolveBBSpec(const ast::Id &id);
   Errorable<void> addSizeEqualSizeAndVarnode(
       const ast::Size &sz, const graph::GraphVarnode *gvn, CondVectType *conds
   );

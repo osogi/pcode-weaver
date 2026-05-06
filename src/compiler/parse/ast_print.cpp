@@ -188,6 +188,13 @@ static void bbDominatedBy(std::ostream &os, const BasicBlockDominatedBy &n) {
   bbVar(os, n.bb);
 }
 
+static void
+bbOutgoingEdge(std::ostream &os, const BasicBlockOutgoingEdge &n) {
+  bbPattern(os, n.bbp);
+  os << " ->(" << n.outIndex << ") ";
+  bbVar(os, n.bb);
+}
+
 static void varnodePattern(std::ostream &os, const VarnodePattern &vp) {
   std::visit(
       util::overloaded{
@@ -219,6 +226,9 @@ static void bbPattern(std::ostream &os, const BasicBlockPattern &bbp) {
           [&](const BasicBlockVar &b) { bbVar(os, b); },
           [&](const Box<BasicBlockDominatedBy> &b) {
             box(os, b, bbDominatedBy);
+          },
+          [&](const Box<BasicBlockOutgoingEdge> &b) {
+            box(os, b, bbOutgoingEdge);
           }
       },
       bbp

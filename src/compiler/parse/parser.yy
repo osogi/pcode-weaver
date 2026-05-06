@@ -442,6 +442,12 @@ basic_block_pattern:
           ast::BasicBlockDominatedBy{std::move($bbp), $bbv}
           );
       }
+  | basic_block_pattern[bbp] RIGHT_ARROW LPAREN NUMBER[num] RPAREN bb_var[bbv]
+      {
+        $$ = std::make_unique<ast::BasicBlockOutgoingEdge>(
+          ast::BasicBlockOutgoingEdge{std::move($bbp), static_cast<uint32_t>($num), $bbv}
+          );
+      }
 
 rule_pattern:
     varnode_pattern      { $$ = std::move($1); }

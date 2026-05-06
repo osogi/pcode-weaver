@@ -30,6 +30,7 @@ enum class CheckKind : std::uint8_t {
   OffsetEqual,
   BasicBlockEqual,
   BasicBlockDominates,
+  BasicBlockOutgoingEdge,
 };
 
 enum class CheckValueKind : std::uint8_t {
@@ -80,9 +81,10 @@ struct Check {
   CheckKind kind = CheckKind::SizeEqual;
   CheckValue left;
   CheckValue right;
+  std::uint32_t edgeIndex = 0;
 
   template <class Archive> void serialize(Archive &ar) {
-    ar(kind, left, right);
+    ar(kind, left, right, edgeIndex);
   }
 };
 
