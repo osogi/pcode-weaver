@@ -1,4 +1,5 @@
 #include "pwrule.hh"
+#include "debug.hh"
 
 #include <ghidra/block.hh>
 #include <ghidra/fspec.hh>
@@ -220,7 +221,9 @@ bool visitSourceCandidates(
     for (auto iter = data.beginOpAlive(); iter != data.endOpAlive(); ++iter) {
       ghidra::PcodeOp *op = *iter;
       if (op != nullptr) {
-        return visitor(pnodeCandidate(op));
+        if (visitor(pnodeCandidate(op))) {
+          return true;
+        }
       }
     }
     return false;
@@ -290,8 +293,7 @@ bool visitSourceCandidates(
 bool stepKindMatches(const MatchStep &step, const Candidate &candidate) {
   switch (step.kind) {
   case StepKind::AnyVarnode:
-    return candidate.kind == CandidateKind::Varnode &&
-           candidate.vn != nullptr;
+    return candidate.kind == CandidateKind::Varnode && candidate.vn != nullptr;
 
   case StepKind::Constant:
     return candidate.kind == CandidateKind::Varnode &&
@@ -735,17 +737,7 @@ ghidra::int4 PcodeWeaverRule::applyPattern(ghidra::Funcdata &data) {
     return 0;
   }
 
-  const MatchStep &root = compiled.pattern.steps.front();
-  if (root.kind != StepKind::Pnode) {
-    return 0;
-  }
-
-  if (!root.hasOpCode) {
-    return 0;
-  }
-
-  const auto opCode = static_cast<ghidra::OpCode>(root.opCode);
-  for (auto iter = data.beginOp(opCode); iter != data.endOp(opCode); ++iter) {
+  for (auto iter = data.beginOpAlive(); iter != data.endOpAlive(); ++iter) {
     if (applyPatternToPnode(data, *iter) != 0) {
       return 1;
     }

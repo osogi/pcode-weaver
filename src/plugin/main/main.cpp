@@ -2,7 +2,9 @@
 // SPDX-FileCopyrightText: © 2026 Efremov Alexey <4osogi@gmail.com>
 
 #include "compiled_rule.hh"
+#include "debug.hh"
 #include "pwrule.hh"
+
 #include "rule_directory.hh"
 
 #include <cereal/archives/binary.hpp>
@@ -26,18 +28,6 @@
 
 using namespace ghidra;
 using namespace reoxide;
-
-#if defined(PCODE_WEAVER_DEBUG) || defined(DEBUG)
-#define PCODE_WEAVER_DEBUG_LOG(...) LOG_DEBUG(__VA_ARGS__)
-#define PCODE_WEAVER_DEBUG_SEND(reox, message) (reox).sendString(message)
-#else
-#define PCODE_WEAVER_DEBUG_LOG(...)                                            \
-  do {                                                                         \
-  } while (0)
-#define PCODE_WEAVER_DEBUG_SEND(reox, message)                                 \
-  do {                                                                         \
-  } while (0)
-#endif
 
 namespace {
 
@@ -241,23 +231,26 @@ public:
     int4 appliedRules = 0;
 
     for (const LoadedRule &loadedRule : plugin.getRules()) {
-      PcodeWeaverRule rule{loadedRule.rule};
-      const int4 applied = rule.apply(data);
-      if (applied == 0) {
-        continue;
-      }
+      int4 applied = true;
+      while (applied) {
+        PcodeWeaverRule rule{loadedRule.rule};
+        applied = rule.apply(data);
+        if (applied == 0) {
+          break;
+        }
 
-      appliedRules += applied;
-      PCODE_WEAVER_DEBUG_LOG(
-          "Applied PcodeWeaver rule %s to %s",
-          loadedRule.path.c_str(),
-          data.getName().c_str()
-      );
-      PCODE_WEAVER_DEBUG_SEND(
-          reox,
-          "pcodeweaver applied " + loadedRule.path.filename().string() +
-              " to " + data.getName()
-      );
+        appliedRules += applied;
+        PCODE_WEAVER_DEBUG_LOG(
+            "Applied PcodeWeaver rule %s to %s",
+            loadedRule.path.c_str(),
+            data.getName().c_str()
+        );
+        PCODE_WEAVER_DEBUG_SEND(
+            reox,
+            "pcodeweaver applied " + loadedRule.path.filename().string() +
+                " to " + data.getName()
+        );
+      }
     }
 
     return appliedRules;
