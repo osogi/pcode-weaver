@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: © 2026 Efremov Alexey <4osogi@gmail.com>
+
 #include "validate/specvalues.hh"
 #include "parse/ast_print.hh"
 

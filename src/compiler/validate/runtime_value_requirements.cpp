@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: © 2026 Efremov Alexey <4osogi@gmail.com>
+
 #include "validate/runtime_value_requirements.hh"
 
 #include "common/util.hh"
