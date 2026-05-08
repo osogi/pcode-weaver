@@ -1,0 +1,41 @@
+name: build
+
+on: [pull_request]
+
+jobs:
+  build-compiler:
+    name: Build Compiler
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bison flex libfl-dev g++-13 python3-venv
+          g++-13 --version
+          python3 -m venv venv
+          . venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install 'meson>=1.10.1' 'ninja>=1.11' 'reoxide==0.7.2'
+
+      - name: Build compiler
+        working-directory: src/compiler
+        run: |
+          . ../../venv/bin/activate
+          export XDG_CONFIG_HOME="${RUNNER_TEMP}/config"
+          mkdir -p "${XDG_CONFIG_HOME}/reoxide"
+          touch "${XDG_CONFIG_HOME}/reoxide/reoxide.toml"
+          CXX=g++-13 meson setup build --buildtype release
+          meson compile -j 1 -C build
+
+  build-plugin:
+    name: Build Plugin
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build plugin
+        run: docker build -o tmp/out .

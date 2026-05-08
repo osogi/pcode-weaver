@@ -1,0 +1,22 @@
+name: formatting-check
+
+on: [push, pull_request]
+
+jobs:
+  check-formatting:
+    name: Check Code Formatting
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: python3 -m pip install 'clang-format==20.1.8'
+
+      - name: Check Formatting
+        run: |
+          git ls-files \
+            'src/compiler/*.cpp' 'src/compiler/*.hh' 'src/compiler/*.hpp' 'src/compiler/*.h' \
+            'src/plugin/*.cpp' 'src/plugin/*.hh' 'src/plugin/*.hpp' 'src/plugin/*.h' \
+            'src/inc/*.cpp' 'src/inc/*.hh' 'src/inc/*.hpp' 'src/inc/*.h' \
+            ':!:src/inc/cereal/**' \
+            | xargs -r clang-format --dry-run --Werror
