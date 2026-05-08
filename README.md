@@ -112,7 +112,8 @@ Rule language documentation: [RULE_SYNTAX.md](RULE_SYNTAX.md).
 
 ```sh
 cd src/compiler
-meson setup build --buildtype release
+# Or any other C++23 compiler
+CXX=g++-13 meson setup build --buildtype release
 meson compile -j 1 -C build
 ```
 
