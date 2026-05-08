@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: © 2026 Efremov Alexey <4osogi@gmail.com>
 
 #include "parse/driver.hh"
-#include "rulecompile/rulecompile_driver.hh"
 #include "rule_directory.hh"
+#include "rulecompile/rulecompile_driver.hh"
 #include "validate/validate_driver.hh"
 
 #include <cereal/archives/portable_binary.hpp>
@@ -50,8 +50,10 @@ void printUsage(std::ostream &out, std::string_view program) {
       << "  -d, --output-dir <dir>   Write compiled rules into <dir>\n"
       << "      --rules-dir          Write compiled rules into the plugin rule "
          "directory\n"
-      << "      --check              Parse, validate, and compile without writing\n"
-      << "      --print-conditions   Print generated user and required conditions\n"
+      << "      --check              Parse, validate, and compile without "
+         "writing\n"
+      << "      --print-conditions   Print generated user and required "
+         "conditions\n"
       << "  -v, --verbose            Print compile details\n"
       << "  -h, --help               Show this help\n"
       << "\n"
@@ -171,8 +173,7 @@ fs::path outputPathFor(const CliOptions &options, const fs::path &input) {
 }
 
 bool writeCompiledRule(
-    const pcodeweaver::compiled::Rule &rule,
-    const fs::path &path,
+    const pcodeweaver::compiled::Rule &rule, const fs::path &path,
     std::string &error
 ) {
   try {
@@ -196,8 +197,7 @@ bool writeCompiledRule(
 }
 
 void printConditionList(
-    std::ostream &out,
-    std::string_view label,
+    std::ostream &out, std::string_view label,
     const std::vector<speccond::SpecCondition> &conditions
 ) {
   out << "  " << label << ":\n";
@@ -212,9 +212,7 @@ void printConditionList(
 }
 
 void printConditions(
-    std::ostream &out,
-    const fs::path &input,
-    const CompileResult &result
+    std::ostream &out, const fs::path &input, const CompileResult &result
 ) {
   out << input.string() << ":\n";
   printConditionList(
@@ -238,14 +236,17 @@ Errorable<CompileResult> compileRule(const fs::path &input) {
   }
 
   auto runtimeChecks = validateDriver.getRuntimeCheckConditions();
-  RuleCompileDriver compileDriver(RuleCompileInput{
-      .actions = rule.actions,
-      .patternGraph = validateDriver.getPGraph(),
-      .actionGraph = validateDriver.getActGraph(),
-      .sizeSolver = validateDriver.getSizeSolver(),
-      .runtimeChecks = runtimeChecks,
-      .runtimeValueRequirements = validateDriver.getRuntimeValueRequirements(),
-  });
+  RuleCompileDriver compileDriver(
+      RuleCompileInput{
+          .actions = rule.actions,
+          .patternGraph = validateDriver.getPGraph(),
+          .actionGraph = validateDriver.getActGraph(),
+          .sizeSolver = validateDriver.getSizeSolver(),
+          .runtimeChecks = runtimeChecks,
+          .runtimeValueRequirements =
+              validateDriver.getRuntimeValueRequirements(),
+      }
+  );
 
   auto compileRes = compileDriver.compile();
   if (!compileRes.has_value()) {

@@ -7,9 +7,8 @@
 using graph::unq;
 
 namespace infer {
-Errorable<specvalues::SpecValueBB> Inferencer::resolveBBSpec(
-    const ast::Id &id
-) {
+Errorable<specvalues::SpecValueBB>
+Inferencer::resolveBBSpec(const ast::Id &id) {
   auto found = bbSolver.find(id);
   auto *spec = std::get_if<specvalues::SpecValueBB>(&found);
   if (spec == nullptr) {
@@ -194,10 +193,12 @@ Errorable<void> Inferencer::inferenceVarnodeUserConds(
     }
 
     if (vt.offset.has_value() && conds != nullptr) {
-      conds->push_back(speccond::OffsetEqual{
-          specvalues::OffsetOfVarnode(vg->id),
-          specvalues::ConcreateOffset(vt.offset.value())
-      });
+      conds->push_back(
+          speccond::OffsetEqual{
+              specvalues::OffsetOfVarnode(vg->id),
+              specvalues::ConcreateOffset(vt.offset.value())
+          }
+      );
     }
   }
   return {};
@@ -260,11 +261,13 @@ Errorable<void> Inferencer::inferenceUserConds(
       if (!right.has_value()) {
         return std::unexpected(right.error());
       }
-      conds->push_back(speccond::BBOutgoingEdge{
-          .a = left.value(),
-          .b = right.value(),
-          .outIndex = edge.outIndex,
-      });
+      conds->push_back(
+          speccond::BBOutgoingEdge{
+              .a = left.value(),
+              .b = right.value(),
+              .outIndex = edge.outIndex,
+          }
+      );
     }
   }
 

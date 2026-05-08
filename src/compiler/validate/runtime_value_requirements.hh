@@ -22,8 +22,7 @@ public:
   static RuntimeValueRequirements fromActionGraph(
       const graph::PcodeGraph &patternGraph,
       const graph::ActionPcodeGraph &actionGraph,
-      const solvers::SizeSolver &sizeSolver,
-      const solvers::BBSolver &bbSolver
+      const solvers::SizeSolver &sizeSolver, const solvers::BBSolver &bbSolver
   );
 
   void requireVarnodeSize(const ast::Id &id) { varnodeSizeIds.insert(id); }
@@ -36,9 +35,7 @@ public:
   bool needsVarnodeBB(const ast::Id &id) const {
     return varnodeBBIds.contains(id);
   }
-  bool needsPnodeBB(const ast::Id &id) const {
-    return pnodeBBIds.contains(id);
-  }
+  bool needsPnodeBB(const ast::Id &id) const { return pnodeBBIds.contains(id); }
 
 private:
   std::unordered_set<ast::Id> varnodeSizeIds;

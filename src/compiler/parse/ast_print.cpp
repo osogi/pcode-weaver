@@ -191,8 +191,7 @@ static void bbDominatedBy(std::ostream &os, const BasicBlockDominatedBy &n) {
   bbVar(os, n.bb);
 }
 
-static void
-bbOutgoingEdge(std::ostream &os, const BasicBlockOutgoingEdge &n) {
+static void bbOutgoingEdge(std::ostream &os, const BasicBlockOutgoingEdge &n) {
   bbPattern(os, n.bbp);
   os << " ->(" << n.outIndex << ") ";
   bbVar(os, n.bb);

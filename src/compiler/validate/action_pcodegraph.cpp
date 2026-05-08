@@ -15,7 +15,9 @@ ActionPcodeGraph::ActionPcodeGraph(const PcodeGraph &base)
     if (node == nullptr || node->isGhost || !node->edges.def.has_value()) {
       continue;
     }
-    patternVarnodeDefEmpty.emplace(node->id, node->edges.def.value() == nullptr);
+    patternVarnodeDefEmpty.emplace(
+        node->id, node->edges.def.value() == nullptr
+    );
   }
 }
 
