@@ -29,8 +29,8 @@ struct BBOutgoingEdge {
   std::uint32_t outIndex;
 };
 
-using SpecCondition = std::variant<
-    SizeEqual, OffsetEqual, BBEqual, BBDominate, BBOutgoingEdge>;
+using SpecCondition =
+    std::variant<SizeEqual, OffsetEqual, BBEqual, BBDominate, BBOutgoingEdge>;
 
 std::ostream &operator<<(std::ostream &os, const SizeEqual &val);
 std::ostream &operator<<(std::ostream &os, const OffsetEqual &val);

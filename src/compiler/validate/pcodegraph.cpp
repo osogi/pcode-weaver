@@ -402,8 +402,7 @@ PcodeGraph::addVarnodePattern(const ast::VarnodePattern &vp) {
                         return gv;
                       }
                       return err(
-                          "Varnode " + toStr(gv) +
-                          " already had def pnode (" +
+                          "Varnode " + toStr(gv) + " already had def pnode (" +
                           unpackGP(*vIn.value())->id.getName() +
                           ") during adding EMPTY as new one"
                       );
@@ -696,9 +695,9 @@ void PcodeGraph::addGhostNodesVarGraphNode(Context &cntx, GraphVarnode *gv) {
   //   return;
   // }
 
-  // GraphPnode *gp = createGhostPnode(cntx, "_ghost_def_of_" + vg->id.getName());
-  // OpGraphNode *og = unpackGP(*gp).get();
-  // if (og->edges.output == nullptr) {
+  // GraphPnode *gp = createGhostPnode(cntx, "_ghost_def_of_" +
+  // vg->id.getName()); OpGraphNode *og = unpackGP(*gp).get(); if
+  // (og->edges.output == nullptr) {
   //   og->edges.output = gv;
   //   vg->edges.def = gp;
   // }

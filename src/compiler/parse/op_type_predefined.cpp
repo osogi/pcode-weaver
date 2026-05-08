@@ -40,11 +40,7 @@ InVarnodeConditions createInConds(const std::string &str) {
 #define OP_WITH_OPCODE(token, inConds, outCond, opcode)                        \
   (std::pair<OpTypeToken, OpType>{                                             \
       yy::Parser::token_kind_type::RULES_TOKEN_##token,                        \
-      OpType{                                                                  \
-          #token,                                                              \
-          OpTypeScheme{inConds, outCond, false},                               \
-          opcode                                                               \
-      }                                                                        \
+      OpType{#token, OpTypeScheme{inConds, outCond, false}, opcode}            \
   })
 
 #define OP(token, inConds, outCond)                                            \
@@ -55,8 +51,10 @@ InVarnodeConditions createInConds(const std::string &str) {
 
 #define OP_CUSTOM_OPCODE(name, inCondsRaw, outCondRaw, opcode)                 \
   OP_WITH_OPCODE(                                                              \
-      name, createInConds(inCondsRaw),                                         \
-      OutVarnodeConditionDefault{createSize(outCondRaw)}, opcode               \
+      name,                                                                    \
+      createInConds(inCondsRaw),                                               \
+      OutVarnodeConditionDefault{createSize(outCondRaw)},                      \
+      opcode                                                                   \
   )
 
 #define OP_DEFAULT(name, inCondsRaw, outCondRaw)                               \
@@ -74,7 +72,8 @@ InVarnodeConditions createInConds(const std::string &str) {
 
 #define OP_NO_OUT_OR(name, inCondsRaw, outCondRaw)                             \
   OP_CUSTOM_OUT(                                                               \
-      name, inCondsRaw,                                                        \
+      name,                                                                    \
+      inCondsRaw,                                                              \
       OutVarnodeConditionNoOutOr{                                              \
           OutVarnodeConditionDefault{createSize(outCondRaw)}                   \
       }                                                                        \
@@ -82,7 +81,8 @@ InVarnodeConditions createInConds(const std::string &str) {
 
 #define OP_NO_OUT_OR_CUSTOM_OPCODE(name, inCondsRaw, outCondRaw, opcode)       \
   OP_WITH_OPCODE(                                                              \
-      name, createInConds(inCondsRaw),                                         \
+      name,                                                                    \
+      createInConds(inCondsRaw),                                               \
       OutVarnodeConditionNoOutOr{                                              \
           OutVarnodeConditionDefault{createSize(outCondRaw)}                   \
       },                                                                       \
@@ -103,7 +103,9 @@ std::unordered_map<OpTypeToken, OpType> defaultOpType = {
     OP_NO_OUT(BRANCHIND, STRVEC("_")),
     OP_NO_OUT_OR(CALL, "*", "_"),
     OP_NO_OUT_OR(CALLIND, "*", "_"),
-    OP_NO_OUT_OR_CUSTOM_OPCODE(USERDEFINED, "*", "_", ghidra::OpCode::CPUI_CALLOTHER),
+    OP_NO_OUT_OR_CUSTOM_OPCODE(
+        USERDEFINED, "*", "_", ghidra::OpCode::CPUI_CALLOTHER
+    ),
     OP_NO_OUT(RETURN, "*"),
 
     OP_DEFAULT(PIECE, STRVEC("_", "_"), "_"),
@@ -158,8 +160,12 @@ std::unordered_map<OpTypeToken, OpType> defaultOpType = {
     OP_DEFAULT(FLOAT_CEIL, STRVEC("a"), "a"),
     OP_DEFAULT(FLOAT_FLOOR, STRVEC("a"), "a"),
     OP_DEFAULT(FLOAT_ROUND, STRVEC("a"), "a"),
-    OP_CUSTOM_OPCODE(INT2FLOAT, STRVEC("_"), "_", ghidra::OpCode::CPUI_FLOAT_INT2FLOAT),
-    OP_CUSTOM_OPCODE(FLOAT2FLOAT, STRVEC("_"), "_", ghidra::OpCode::CPUI_FLOAT_FLOAT2FLOAT),
+    OP_CUSTOM_OPCODE(
+        INT2FLOAT, STRVEC("_"), "_", ghidra::OpCode::CPUI_FLOAT_INT2FLOAT
+    ),
+    OP_CUSTOM_OPCODE(
+        FLOAT2FLOAT, STRVEC("_"), "_", ghidra::OpCode::CPUI_FLOAT_FLOAT2FLOAT
+    ),
     OP_CUSTOM_OPCODE(TRUNC, STRVEC("_"), "_", ghidra::OpCode::CPUI_FLOAT_TRUNC),
 
     OP_NO_OUT_OR(CPOOLREF, "*", "_"),

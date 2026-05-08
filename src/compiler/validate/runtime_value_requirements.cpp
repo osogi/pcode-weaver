@@ -13,8 +13,7 @@ namespace {
 
 void collectPatternGhostNodeIds(
     const graph::PcodeGraph &patternGraph,
-    std::unordered_set<ast::Id> &varnodes,
-    std::unordered_set<ast::Id> &pnodes
+    std::unordered_set<ast::Id> &varnodes, std::unordered_set<ast::Id> &pnodes
 ) {
   for (const auto &gn : patternGraph.liveNodes()) {
     std::visit(
@@ -39,8 +38,7 @@ void collectPatternGhostNodeIds(
 }
 
 void requireFinalSizeIfGhost(
-    RuntimeValueRequirements &requirements,
-    const solvers::SizeSolver &solver,
+    RuntimeValueRequirements &requirements, const solvers::SizeSolver &solver,
     const solvers::SizeTerm &term,
     const std::unordered_set<ast::Id> &ghostVarnodes
 ) {
@@ -62,8 +60,7 @@ void requireFinalSizeIfGhost(
 }
 
 void requireFinalBBIfGhost(
-    RuntimeValueRequirements &requirements,
-    const solvers::BBSolver &solver,
+    RuntimeValueRequirements &requirements, const solvers::BBSolver &solver,
     const solvers::BBTerm &term,
     const std::unordered_set<ast::Id> &ghostVarnodes,
     const std::unordered_set<ast::Id> &ghostPnodes
@@ -100,8 +97,7 @@ void requireFinalBBIfGhost(
 RuntimeValueRequirements RuntimeValueRequirements::fromActionGraph(
     const graph::PcodeGraph &patternGraph,
     const graph::ActionPcodeGraph &actionGraph,
-    const solvers::SizeSolver &sizeSolver,
-    const solvers::BBSolver &bbSolver
+    const solvers::SizeSolver &sizeSolver, const solvers::BBSolver &bbSolver
 ) {
   RuntimeValueRequirements result;
   std::unordered_set<ast::Id> ghostVarnodes;
@@ -110,18 +106,23 @@ RuntimeValueRequirements RuntimeValueRequirements::fromActionGraph(
 
   for (const ast::Id &newVarnode : actionGraph.getNewVarnodeIds()) {
     requireFinalSizeIfGhost(
-        result, sizeSolver, specvalues::SizeOfVarnode(newVarnode),
-        ghostVarnodes
+        result, sizeSolver, specvalues::SizeOfVarnode(newVarnode), ghostVarnodes
     );
     requireFinalBBIfGhost(
-        result, bbSolver, specvalues::BBOfVarnode(newVarnode), ghostVarnodes,
+        result,
+        bbSolver,
+        specvalues::BBOfVarnode(newVarnode),
+        ghostVarnodes,
         ghostPnodes
     );
   }
 
   for (const ast::Id &newPnode : actionGraph.getNewPnodeIds()) {
     requireFinalBBIfGhost(
-        result, bbSolver, specvalues::BBOfPnode(newPnode), ghostVarnodes,
+        result,
+        bbSolver,
+        specvalues::BBOfPnode(newPnode),
+        ghostVarnodes,
         ghostPnodes
     );
   }

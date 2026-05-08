@@ -1,7 +1,8 @@
 /*
  * SPDX-License-Identifier: Apache-2.0
  * SPDX-FileCopyrightText: © 2026 Efremov Alexey <4osogi@gmail.com>
- * Contains code adapted from bison-flex-cpp-example by Krzysztof Narkiewicz <krzysztof.narkiewicz@ezaquarii.com>
+ * Contains code adapted from bison-flex-cpp-example by Krzysztof Narkiewicz
+ * <krzysztof.narkiewicz@ezaquarii.com>
  */
 
 #pragma once
@@ -19,12 +20,12 @@ namespace yy {
 class Driver; // forward declaration
 
 class Scanner : public yyFlexLexer {
-  public:
-    Scanner(Driver& driver) : driver(driver) {}
-    virtual ~Scanner() {}
-    virtual Parser::symbol_type get_next_token();
+public:
+  Scanner(Driver &driver) : driver(driver) {}
+  virtual ~Scanner() {}
+  virtual Parser::symbol_type get_next_token();
 
-  private:
-    Driver& driver;
+private:
+  Driver &driver;
 };
 } // namespace yy

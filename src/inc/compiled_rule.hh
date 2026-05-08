@@ -96,9 +96,7 @@ struct EdgeCheck {
   StepSource source;
   StepId expected = 0;
 
-  template <class Archive> void serialize(Archive &ar) {
-    ar(source, expected);
-  }
+  template <class Archive> void serialize(Archive &ar) { ar(source, expected); }
 };
 
 struct MatchStep {
@@ -118,9 +116,7 @@ struct MatchStep {
 struct PatternProgram {
   std::vector<MatchStep> steps;
 
-  template <class Archive> void serialize(Archive &ar) {
-    ar(steps);
-  }
+  template <class Archive> void serialize(Archive &ar) { ar(steps); }
 };
 
 struct ActionNodeRef {

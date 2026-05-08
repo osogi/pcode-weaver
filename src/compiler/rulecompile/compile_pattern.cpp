@@ -645,10 +645,8 @@ Errorable<PatternCompileResult> compilePatternWithIds(
   for (const auto &[key, step] : stepIds) {
     if (key.kind == KeyKind::Pnode) {
       pnodeSteps.emplace(graph::unpackGP(*asPnode(key))->id, step);
-    } else if (
-        const graph::VarGraphNode *vn =
-            get_if_uniq<graph::VarGraphNode>(asVarnode(key))
-    ) {
+    } else if (const graph::VarGraphNode *vn =
+                   get_if_uniq<graph::VarGraphNode>(asVarnode(key))) {
       varnodeSteps.emplace(vn->id, step);
     }
   }
