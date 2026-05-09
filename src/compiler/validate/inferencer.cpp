@@ -69,7 +69,7 @@ Inferencer::inferencePnode(const graph::GraphPnode &gp, CondVectType *conds) {
     }
   }
 
-  if (og.opTp.has_value()) {
+  if (og.opTp.has_value() && !og.opTp->isWildcard) {
     const ast::OpType &origOpTp = og.opTp.value();
     ast::OpType freeOpTp = cntx.opTypePredefFactory.alphaUpdate(origOpTp);
 

@@ -190,7 +190,7 @@ compiled::MatchStep compileStep(Key key, compiled::StepSource source) {
   if (key.kind == KeyKind::Pnode) {
     const graph::OpGraphNode &pn = *graph::unpackGP(*asPnode(key));
     step.kind = compiled::StepKind::Pnode;
-    if (pn.opTp.has_value()) {
+    if (pn.opTp.has_value() && !pn.opTp->isWildcard) {
       step.hasOpCode = true;
       step.opCode = static_cast<std::int32_t>(pn.opTp->ghidraOpCode);
     }

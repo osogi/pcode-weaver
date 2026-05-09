@@ -186,7 +186,8 @@ OpType OpTypeFactory::alphaUpdate(const OpType &old) {
   return OpType{
       .opName = old.opName,
       .scheme = alphaUpdate(old.scheme),
-      .ghidraOpCode = old.ghidraOpCode
+      .ghidraOpCode = old.ghidraOpCode,
+      .isWildcard = old.isWildcard
   };
 };
 

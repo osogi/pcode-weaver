@@ -25,6 +25,11 @@ Errorable<void> NewOpGraphNode::addSpec(const ast::PnodeSpecTypeAndLoc &spec) {
   if (this->opTp.has_value()) {
     return err("Pnode " + this->id.getName() + " already specialised");
   }
+  if (spec.opType.isWildcard) {
+    return err(
+        "New pnode " + this->id.getName() + " cannot use ANY operation type"
+    );
+  }
 
   this->opTp = spec.opType; // will not update ids inside schema
   this->oldVarId = spec.oldVar.id;
@@ -385,6 +390,11 @@ Errorable<void> ActionPcodeGraph::validateNewPnode(const NewOpGraphNode &node) {
   if (!node.opTp.has_value()) {
     return err(
         "New pnode " + node.id.getName() + " isn't specialized (OpType not set)"
+    );
+  }
+  if (node.opTp->isWildcard) {
+    return err(
+        "New pnode " + node.id.getName() + " cannot use ANY operation type"
     );
   }
 

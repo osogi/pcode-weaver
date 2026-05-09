@@ -362,6 +362,9 @@ Errorable<void> compileCreatePnodes(ActionCompileContext &ctx) {
     if (!node->opTp.has_value()) {
       return err("New pnode " + id.getName() + " has no operation type");
     }
+    if (node->opTp->isWildcard) {
+      return err("New pnode " + id.getName() + " has ANY operation type");
+    }
 
     auto anchor = compilePnodeRef(ctx, ast::PnodeVar{node->oldVarId});
     if (!anchor.has_value()) {
