@@ -304,7 +304,7 @@ Errorable<void> PcodeGraph::validatePnodeOut(
 }
 Errorable<void> PcodeGraph::validatePnode(const GraphPnode &gpn) {
   const OpGraphNode &og = *unpackGP(gpn);
-  if (og.opTp.has_value()) {
+  if (og.opTp.has_value() && !og.opTp->isWildcard) {
     const ast::OpType &opTp = og.opTp.value();
     auto res = std::visit(
         util::overloaded{
@@ -365,7 +365,10 @@ Errorable<GraphPnode *> PcodeGraph::addPnodeTerm(const ast::PnodeTerm &pt) {
             pgn->userBbs.push_back(pvt.ptype.bb);
 
             if (pgn->opTp.has_value()) {
-              if (pgn->opTp.value() != pvt.ptype.optype) {
+              if (pgn->opTp->isWildcard) {
+                pgn->opTp = pvt.ptype.optype;
+              } else if (!pvt.ptype.optype.isWildcard &&
+                         pgn->opTp.value() != pvt.ptype.optype) {
                 return err(
                     "For pnode " + pvt.var.id.getName() +
                     "setted two differ operations"
@@ -670,7 +673,7 @@ void PcodeGraph::addGhostNodesOpGraphNodeOut(
 
 void PcodeGraph::addGhostNodesOpGraphNode(Context &cntx, GraphPnode *gp) {
   OpGraphNode *og = unpackGP(*gp).get();
-  if (og->isGhost || !og->opTp.has_value()) {
+  if (og->isGhost || !og->opTp.has_value() || og->opTp->isWildcard) {
     return;
   }
 

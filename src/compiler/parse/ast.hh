@@ -176,8 +176,12 @@ struct OpType {
   std::string opName;
   OpTypeScheme scheme;
   ghidra::OpCode ghidraOpCode;
+  bool isWildcard = false;
 
   std::weak_ordering operator<=>(const OpType &other) const {
+    if (this->isWildcard != other.isWildcard) {
+      return this->isWildcard <=> other.isWildcard;
+    }
     return this->ghidraOpCode <=> other.ghidraOpCode;
   }
 

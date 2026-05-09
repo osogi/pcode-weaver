@@ -347,6 +347,23 @@ op_type:
                                 error(@1, res.error().message());
                               }
                             }
+  | UNDERSCORE
+      {
+        $$ = ast::OpType{
+          "ANY",
+          ast::OpTypeScheme{
+            ast::InVarnodeConditionsSpecial{},
+            ast::OutVarnodeConditionNoOutOr{
+              ast::OutVarnodeConditionDefault{
+                driver.cntx.sizeVarFactory.createId(false)
+              }
+            },
+            false
+          },
+          ghidra::OpCode::CPUI_COPY,
+          true
+        };
+      }
 
 pnode_type:
   op_type COMMA bb_var { $$ = ast::PnodeType($1, $3); }

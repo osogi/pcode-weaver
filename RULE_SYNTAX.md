@@ -67,8 +67,12 @@ Pnodes:
 o_name
 o_name(OPCODE, bb) 
 o_name(OPCODE, _)        // `_` is a wildcard for any basic block
+o_name(_, bb)            // ANY opcode wildcard: match any pnode in bb
 OPEMPTY
 ```
+
+Be careful with `o_name(_, bb)`: it only binds the matched pnode for actions;
+it will not add opcode-specific input/output checks.
 
 Basic blocks:
 
@@ -123,6 +127,8 @@ Supported forms:
 
 - `o_new(OPCODE BEFORE o_old)` - create pnode before an existing pnode
 - `o_new(OPCODE AFTER o_old)` - create pnode after an existing pnode
+- `OPCODE` must be a concrete opcode when creating a pnode; `_`/ANY is only for
+  pattern matching existing pnodes
 - `value ->> (N) o_target` - set input `N`
 - `o_target ->> v_target` - set output varnode
 - `v_new(size)` - create or size a varnode action term
@@ -134,7 +140,7 @@ Supported forms:
 
 Copy Propagation
 ```text
-v_orig ->(0) o_copy (COPY, _) -> v_copy ->(0) o_any
+v_orig ->(0) o_copy (COPY, _) -> v_copy ->(0) o_any(_, _)
 --
 v_orig ->>(0) o_any
 ```
