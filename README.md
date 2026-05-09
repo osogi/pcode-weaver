@@ -1,6 +1,6 @@
-# Pcode Weaver ReOxide Plugin
+# Pcode Weaver
 
-Experimental ReOxide/Ghidra plugin for applying custom p-code rewrite rules
+Experimental ReOxide(Ghidra) plugin for applying custom p-code rewrite rules
 with validation checks.
 
 The project has two parts:
@@ -9,6 +9,8 @@ The project has two parts:
   files;
 - a ReOxide plugin that loads `.pwrule` files and applies them during
   decompilation.
+
+<img width="813" height="583" alt="Demo" src="https://github.com/user-attachments/assets/8b72f234-2b61-44bd-b9e8-46f61d8ef7ec" />
 
 ---
 
