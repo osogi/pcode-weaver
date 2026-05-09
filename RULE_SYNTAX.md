@@ -1,5 +1,16 @@
 # Rule Syntax
 
+## Prerequisites
+
+If you are not familiar with p-code, start with Ghidra's
+[p-code reference](https://ghidra.re/ghidra_docs/languages/html/pcoderef.html).
+
+Ghidra does not provide a built-in high p-code view, so the
+[HighPcodeGraphViewer](https://github.com/osogi/HighPcodeGraphViewer) project
+can be useful while writing or debugging rules.
+
+## Rule
+
 Pcode Weaver source rules describe a p-code pattern and the rewrite actions to
 apply when that pattern is found.
 
