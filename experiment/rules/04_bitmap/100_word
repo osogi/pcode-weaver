@@ -1,0 +1,6 @@
+v_bit-> (0) o_shift(INT_RIGHT, _) -> v_res;
+#6 -> (1)o_shift
+--
+#120 ->>(0) o_word(USERDEFINED BEFORE o_shift) ->> v_res;
+v_bit ->>(1) o_word; 
+DELETE o_shift

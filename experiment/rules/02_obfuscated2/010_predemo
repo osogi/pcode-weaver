@@ -1,0 +1,6 @@
+v_id_addr (_, _, 0x0101129) ->(0) o_call_id(CALL, _);
+v_id_arg                    ->(1) o_call_id -> vres ->(0) o_op(_, _)
+
+--
+
+v_id_arg ->> (0) o_op

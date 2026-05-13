@@ -1,0 +1,8 @@
+#117 ->(0) o_mask(USERDEFINED, _) -> v_res ->(1) o_or(INT_OR, _);
+v_other ->(0) o_or(INT_OR, _)
+
+--
+
+v_other ->>(1) o_or;
+v_res ->>(0) o_or
+

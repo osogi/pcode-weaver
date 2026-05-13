@@ -1,0 +1,18 @@
+#117 ->(0) o_mask(USERDEFINED,_) -> v_mask_res ->(0) o_inv(INT_NEGATE, _) -> v_mask_neg;
+v_bit ->(1) o_mask;
+
+                                            v_map ->(0) o_addr;
+#0x78 ->(0) o_word(USERDEFINED, _) -> v_word_res ->(1) o_addr -> vtmp ->(1) o_load(LOAD, _)-> v_mask_map;
+v_bit ->(1) o_word;
+
+v_mask_map ->(0) o_and -> v_and_res ->(2) o_finstore(STORE, _);
+v_mask_neg ->(1) o_and(INT_AND, _)
+
+--
+#30 ->>(0) o_set(USERDEFINED BEFORE o_mask);
+v_map ->>(1) o_set; 
+v_bit ->>(2) o_set;
+
+DELETE o_finstore
+
+
