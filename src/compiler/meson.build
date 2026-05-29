@@ -37,3 +37,7 @@ subdir('validate')
 subdir('rulecompile')
 
 subdir('bin')
+
+if get_option('tests')
+  subdir('tests')
+endif

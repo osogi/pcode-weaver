@@ -1,0 +1,9 @@
+fixture: fixtures/rulecompile/replace_first_arg.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 0
+compile_status: 0
+pattern_steps_count: 3
+action_steps_count: 1
+

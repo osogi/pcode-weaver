@@ -7,3 +7,7 @@ src/publisher/parse/location.hh
 .codex
 tmp
 AGENTS.md
+src/compiler/subprojects/.wraplock
+src/compiler/subprojects/approvaltests/
+src/compiler/subprojects/packagecache/
+src/compiler/tests/**/*.received.*
