@@ -1,0 +1,3 @@
+VnIn(8, BbEntry, 16) ->(0) OpAdd(INT_ADD, BbEntry)
+--
+DELETE
