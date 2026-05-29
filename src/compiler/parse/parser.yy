@@ -8,7 +8,7 @@
 %skeleton "lalr1.cc"
 %require "3.8"
 
-%defines "parse/parser.hh"
+%defines "parse/parser.hpp"
 
 %define api.parser.class  { Parser }
 %define api.token.constructor
@@ -37,7 +37,7 @@
 
   #include "parse/driver.hh"
   #include "parse/scanner.hh"
-  #include "parse/parser.hh"
+  #include "parse/parser.hpp"
 
   static yy::Parser::symbol_type yylex(yy::Scanner &scanner) {
     return scanner.get_next_token();

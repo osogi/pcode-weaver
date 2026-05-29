@@ -8,7 +8,7 @@
 #pragma once
 
 // generated headers
-#include "parse/parser.hh"
+#include "parse/parser.hpp"
 
 #undef yyFlexLexer
 #include <FlexLexer.h>

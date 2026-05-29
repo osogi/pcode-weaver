@@ -8,7 +8,7 @@
 #include "parse/scanner.hh"
 
 // generated headers
-#include "parse/parser.hh"
+#include "parse/parser.hpp"
 
 #include <filesystem>
 
