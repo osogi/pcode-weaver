@@ -1,0 +1,7 @@
+fixture: fixtures/validate/act_inv_varnode_explicit_def.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 1
+validate_error: Build Action Graph (Action Step): Varnode v2 should has explicit define pnode
+

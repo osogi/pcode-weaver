@@ -1,0 +1,3 @@
+v1 ->(0) op(INT_ADD, _)
+--
+v1 ->>(0) op_new(INT_ADD AFTER op)

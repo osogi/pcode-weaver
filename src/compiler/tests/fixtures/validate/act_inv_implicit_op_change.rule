@@ -1,0 +1,6 @@
+v1 -> (0) op1(INT_ADD, _) -> vtmp;
+
+op3 -> v2 -> (0) op2
+--
+op1 ->> v2;
+#1 ->> (0) op_new(COPY AFTER op1) ->> vtmp

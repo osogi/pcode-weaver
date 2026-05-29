@@ -1,0 +1,7 @@
+fixture: fixtures/validate/pat_inv_trans_inf.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 1
+validate_error: Inference User Conditions Pattern Graph: Can't unite 6 and 2
+

@@ -1,0 +1,4 @@
+op(INT_ADD, _) -> v1;
+op2(INT_ADD, _) -> v1
+--
+VEMPTY

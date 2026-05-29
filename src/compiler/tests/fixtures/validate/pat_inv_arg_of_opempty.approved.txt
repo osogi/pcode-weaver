@@ -1,0 +1,7 @@
+fixture: fixtures/validate/pat_inv_arg_of_opempty.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 1
+validate_error: Build Pattern Graph: EMPTY pnode cannot take v1 as an argument
+

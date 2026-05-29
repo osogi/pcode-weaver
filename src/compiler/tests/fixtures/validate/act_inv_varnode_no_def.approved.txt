@@ -1,0 +1,7 @@
+fixture: fixtures/validate/act_inv_varnode_no_def.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 1
+validate_error: Validate Action Graph: Action cannot change whether varnode vtmp is defined by EMPTY pnode
+

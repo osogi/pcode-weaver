@@ -1,0 +1,10 @@
+fixture: fixtures/validate/conds_trans_dom.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 0
+generated_user_conditions:
+  <none>
+required_conditions:
+  <none>
+

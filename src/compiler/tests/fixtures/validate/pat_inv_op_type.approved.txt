@@ -1,0 +1,7 @@
+fixture: fixtures/validate/pat_inv_op_type.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 1
+validate_error: Validate Pattern Graph: Unexpected v1 as 2 arg of pnode op expected Empty
+
