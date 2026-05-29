@@ -1,0 +1,16 @@
+o_mul (INT_MULT, _);
+o_add (INT_ADD, _);
+o_and (INT_AND, _);
+o_xor (INT_XOR, _);
+
+v_param -> (0) o_and;
+#1      -> (1) o_and -> v_and ->(0) o_mul;
+                        #2    ->(1) o_mul -> v_mul ->(0) o_add;
+
+v_param -> (0) o_xor -> v_xor                      ->(1) o_add;
+#1      -> (1) o_xor
+
+--
+v_param ->> (0) o_add;
+#1      ->> (1) o_add
+

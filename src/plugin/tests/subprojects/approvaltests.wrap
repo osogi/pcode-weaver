@@ -1,0 +1,9 @@
+[wrap-git]
+url = https://github.com/approvals/ApprovalTests.cpp.git
+revision = v.10.13.0
+depth = 1
+method = meson
+patch_directory = approvaltests
+
+[provide]
+approvaltests = approvaltests_dep

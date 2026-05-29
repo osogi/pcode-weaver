@@ -11,3 +11,8 @@ src/compiler/subprojects/.wraplock
 src/compiler/subprojects/approvaltests/
 src/compiler/subprojects/packagecache/
 src/compiler/tests/**/*.received.*
+
+src/plugin/tests/subprojects/.wraplock
+src/plugin/tests/subprojects/approvaltests/
+src/plugin/tests/subprojects/packagecache/
+src/plugin/tests/fixtures/**/*.received.*
