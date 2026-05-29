@@ -1,5 +1,0 @@
-VnIn(8, BbEntry, 16) ->(0) OpAdd(INT_ADD, BbEntry);
-OpAdd -> VnOut
---
-VnReplacement(8) ->>(0) OpAdd;
-OpInserted(INT_SUB BEFORE OpAdd) ->> VnOut

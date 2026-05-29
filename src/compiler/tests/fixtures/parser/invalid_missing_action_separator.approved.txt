@@ -1,0 +1,5 @@
+fixture: fixtures/parser/invalid_missing_action_separator.rule
+parse_status: 1
+stderr:
+Parser error: fixtures/parser/invalid_missing_action_separator.rule:2:1: syntax error, unexpected varnode name, expecting -- or ;
+

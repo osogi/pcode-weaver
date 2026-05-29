@@ -1,0 +1,3 @@
+v_orig -> (0) o_copy(COPY, _) -> v_copy -> (0) o_any(_, _)
+--
+v_orig ->> (0) o_any
