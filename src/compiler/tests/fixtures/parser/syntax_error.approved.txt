@@ -1,5 +1,0 @@
-fixture: fixtures/parser/syntax_error.rule
-parse_status: 1
-stderr:
-Parser error: fixtures/parser/syntax_error.rule:3:8: syntax error, unexpected end of file, expecting pnode name
-

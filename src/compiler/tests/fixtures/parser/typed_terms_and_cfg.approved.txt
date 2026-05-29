@@ -1,0 +1,14 @@
+fixture: fixtures/parser/typed_terms_and_cfg.rule
+parse_status: 0
+stderr:
+<empty>
+ast:
+o_add(INT_ADD, bb_entry) -> v_sum(8, bb_entry, 16);
+bb_entry ->(0) bb_next;
+bb_entry <= bb_next
+--
+o_new(INT_MULT BEFORE o_add);
+#42 ->>(1) o_new;
+o_new ->> v_sum;
+DELETE o_add
+

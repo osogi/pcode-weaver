@@ -1,0 +1,9 @@
+fixture: fixtures/parser/empty_examples.rule
+parse_status: 0
+stderr:
+<empty>
+ast:
+VEMPTY ->(0) OPEMPTY -> VEMPTY
+--
+VEMPTY ->>(0) op_new
+

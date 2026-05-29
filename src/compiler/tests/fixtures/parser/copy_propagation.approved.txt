@@ -1,0 +1,9 @@
+fixture: fixtures/parser/copy_propagation.rule
+parse_status: 0
+stderr:
+<empty>
+ast:
+v_orig ->(0) o_copy(COPY, __b_0) -> v_copy ->(0) o_any(ANY, __b_1)
+--
+v_orig ->>(0) o_any
+

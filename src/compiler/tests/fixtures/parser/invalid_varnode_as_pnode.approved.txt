@@ -1,0 +1,5 @@
+fixture: fixtures/parser/invalid_varnode_as_pnode.rule
+parse_status: 1
+stderr:
+Parser error: fixtures/parser/invalid_varnode_as_pnode.rule:2:11: syntax error, unexpected varnode name, expecting OPEMPTY or pnode name
+

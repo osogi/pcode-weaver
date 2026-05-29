@@ -1,0 +1,9 @@
+fixture: fixtures/parser/varnode_offset.rule
+parse_status: 0
+stderr:
+<empty>
+ast:
+v1(__s_0, __b_0, 16) ->(0) op(INT_ADD, __b_1)
+--
+v1 ->>(0) op
+
