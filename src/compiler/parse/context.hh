@@ -7,7 +7,7 @@
 #include "parse/op_type_predefined.hh"
 
 // generated headers
-#include "parse/parser.hh"
+#include "parse/parser.hpp"
 
 struct Context {
   Context()
