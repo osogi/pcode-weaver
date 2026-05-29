@@ -1,0 +1,7 @@
+#0 -> (1) o_to_byte(SUBPIECE, _); 
+v_bit ->(0) o_to_byte -> v_bit_1-> (0) o_and(INT_AND, _) -> v_res;
+#0x3f -> (1)o_and
+--
+#121 ->>(0) o_shift(USERDEFINED BEFORE o_and) ->> v_res;
+v_bit ->>(1) o_shift; 
+DELETE o_and

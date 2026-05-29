@@ -1,0 +1,8 @@
+fixture: fixtures/rulecompile/no_pnode_with_type_component.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 0
+compile_status: 1
+compile_error: Pattern graph contains nodes that cannot be reached from any typed pnode: op2 v3 vout2
+

@@ -1,0 +1,8 @@
+fixture: fixtures/rulecompile/no_pnode_with_type.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 0
+compile_status: 1
+compile_error: Pattern compilation requires at least one pnode with op type
+

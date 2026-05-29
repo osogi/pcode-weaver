@@ -1,0 +1,5 @@
+v1 -> (0) op1 -> vout;
+v2 -> (1) op1
+--
+v1 ->> (1) o_userdef(USERDEFINED AFTER op1);
+#1 ->> (0) o_userdef

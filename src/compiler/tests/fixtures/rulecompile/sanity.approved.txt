@@ -1,0 +1,9 @@
+fixture: fixtures/rulecompile/sanity.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 0
+compile_status: 0
+pattern_steps_count: 1
+action_steps_count: 0
+

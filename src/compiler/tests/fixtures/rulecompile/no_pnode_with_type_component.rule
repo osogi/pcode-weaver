@@ -1,0 +1,10 @@
+v1 -> (0) op1(INT_ADD, _) -> vout;
+v2 -> (1) op1;
+
+v3 -> (0) op2 -> vout2;
+v3 -> (1) op2
+
+--
+#1 ->> (0) o_userdef;
+v1 ->> (1) o_userdef(USERDEFINED AFTER op1);
+v3 ->> (2) o_userdef

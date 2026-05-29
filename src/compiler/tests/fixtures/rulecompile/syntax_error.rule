@@ -1,3 +1,2 @@
-VnIn(8, BbEntry, 16) ->(0) OpAdd(INT_ADD, BbEntry)
---
-DELETE
+v_orig -> (0) o_copy(COPY, _)
+v_orig ->> (0) o_copy

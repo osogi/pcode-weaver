@@ -1,0 +1,9 @@
+fixture: fixtures/rulecompile/exmp_memset.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 0
+compile_status: 0
+pattern_steps_count: 30
+action_steps_count: 9
+
