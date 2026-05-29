@@ -1,0 +1,4 @@
+v1 ->(0) op(INT_ADD, _) -> vout
+--
+DELETE op;
+#1 ->>(0) op_new(COPY AFTER op) ->> vout 

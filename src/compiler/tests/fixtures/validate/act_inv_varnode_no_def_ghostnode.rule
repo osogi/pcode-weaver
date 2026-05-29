@@ -1,0 +1,6 @@
+v1 -> (0) op1(INT_ADD, _);
+
+op3(INT_AND, _) -> v2 -> (0) op2
+--
+op1 ->> v2;
+op3 ->> v_new

@@ -1,0 +1,7 @@
+fixture: fixtures/validate/act_inv_trans_inf.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 1
+validate_error: Inference Action Graph: Can't unite 8 and 1
+

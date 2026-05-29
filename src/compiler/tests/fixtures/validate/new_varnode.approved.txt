@@ -1,4 +1,4 @@
-fixture: fixtures/validate/replace_first_arg.rule
+fixture: fixtures/validate/new_varnode.rule
 parse_status: 0
 stderr:
 <empty>
@@ -6,5 +6,5 @@ validate_status: 0
 generated_user_conditions:
   <none>
 required_conditions:
-  <none>
+  8==size_of_vn_v1
 

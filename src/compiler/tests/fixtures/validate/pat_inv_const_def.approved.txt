@@ -1,0 +1,7 @@
+fixture: fixtures/validate/pat_inv_const_def.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 1
+validate_error: Validate Pattern Graph: Const varnode 1 defined by pnode op
+

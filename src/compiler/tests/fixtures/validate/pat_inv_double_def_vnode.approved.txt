@@ -1,0 +1,7 @@
+fixture: fixtures/validate/pat_inv_double_def_vnode.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 1
+validate_error: Build Pattern Graph: Varnode v1 already had def pnode (op) during adding op2 as new one
+

@@ -1,0 +1,12 @@
+fixture: fixtures/validate/big_rule.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 0
+generated_user_conditions:
+  1==size_of_vn_v_flag_0
+  bb_of_op_o_extend_flag->(0)bb_of_op_o_loop
+  bb_of_op_o_loop->(1)bb_of_op_o_extend_flag
+required_conditions:
+  <none>
+

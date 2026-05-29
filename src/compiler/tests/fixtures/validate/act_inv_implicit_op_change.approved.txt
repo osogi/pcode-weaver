@@ -1,0 +1,7 @@
+fixture: fixtures/validate/act_inv_implicit_op_change.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 1
+validate_error: Validate Action Graph: Action cannot change connections for pnode op3 because its operation type is undefined
+

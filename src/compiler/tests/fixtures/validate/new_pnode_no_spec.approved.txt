@@ -1,0 +1,7 @@
+fixture: fixtures/validate/new_pnode_no_spec.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 1
+validate_error: Validate Action Graph: New pnode op_new isn't specialized (OpType not set)
+

@@ -1,0 +1,12 @@
+v1(a, _) -> (0) op1(INT_ADD, _);
+v2(b, _) -> (1) op1;
+
+vtmp2(2, _) -> (0) op2(INT_MULT, _);
+v2(b, _)    -> (1) op2;
+
+v1(a, _)   -> (0) op3(INT_AND, _);
+vtm1(6, _) -> (1) op3
+
+
+--
+VEMPTY

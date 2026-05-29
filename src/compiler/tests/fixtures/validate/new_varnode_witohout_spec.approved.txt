@@ -1,0 +1,10 @@
+fixture: fixtures/validate/new_varnode_witohout_spec.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 0
+generated_user_conditions:
+  <none>
+required_conditions:
+  8==size_of_vn_v1
+

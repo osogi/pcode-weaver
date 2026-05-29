@@ -1,0 +1,7 @@
+fixture: fixtures/validate/ghost_nodes_save_type.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 1
+validate_error: Inference Action Graph: Can't unite 7 and 8
+

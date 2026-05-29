@@ -1,0 +1,7 @@
+fixture: fixtures/validate/new_pnode_bad_struct.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 1
+validate_error: Validate Action Graph: Unexpected EMPTY as 1 arg of pnode op_new expected non-Empty
+

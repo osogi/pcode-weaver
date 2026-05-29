@@ -1,0 +1,10 @@
+fixture: fixtures/validate/ghost_nodes_rewritte_type.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 0
+generated_user_conditions:
+  8==size_of_vn_v1
+required_conditions:
+  <none>
+

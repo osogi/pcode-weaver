@@ -1,0 +1,12 @@
+fixture: fixtures/validate/conds_dom.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 0
+generated_user_conditions:
+  <none>
+required_conditions:
+  bb_of_op_op1<=bb_of_op_op0
+  bb_of_op_opA<=bb_of_op_op2
+  size_of_vn_vA==size_of_vn_v0
+
