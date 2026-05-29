@@ -1,2 +1,16 @@
+.git/
+venv/
+tmp/
+
 build/
+**/build/
+**/build-*/
+**/build*/
+
+**/subprojects/.wraplock
+**/subprojects/packagecache/
+**/subprojects/approvaltests/
+
+**/*.received.*
+
 Dockerfile

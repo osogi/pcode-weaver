@@ -1,4 +1,6 @@
-FROM quay.io/pypa/manylinux2014 AS build
+ARG PLUGIN_TEST_BASE_IMAGE=pcode-weaver-plugin-test-base:ghidra-12.0_reoxide-0.7.2
+
+FROM quay.io/pypa/manylinux2014 AS plugin-build
 
 ARG REOXIDE_VERSION=0.7.2
 ENV VIRTUAL_ENV=/venv
@@ -17,12 +19,27 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     touch /root/.config/reoxide/reoxide.toml
 
 WORKDIR /plugin
-COPY . .
+COPY src/inc/ ./src/inc/
+COPY src/plugin/meson.build ./src/plugin/meson.build
+COPY src/plugin/main/ ./src/plugin/main/
 
 RUN set -ex;\
     meson setup build ./src/plugin/ --buildtype release;\
     meson install -C build
 
+FROM ${PLUGIN_TEST_BASE_IMAGE} AS plugin-test
+
+COPY --from=plugin-build /root/.local/share/reoxide/plugins/*.so /opt/reoxide/data/plugins/
+COPY src/plugin/tests/scripts/ /opt/pcode-weaver/scripts/
+COPY scripts/install-pcodeweaver-action.sh /opt/pcode-weaver/scripts/install-pcodeweaver-action.sh
+
+RUN set -ex;\
+    default_reoxide_yaml="$(python3 -c 'from pathlib import Path; import reoxide; print(Path(reoxide.__file__).parent / "data" / "default.yaml")')";\
+    cp "${default_reoxide_yaml}" /opt/reoxide/data/current.yaml;\
+    sh /opt/pcode-weaver/scripts/install-pcodeweaver-action.sh /opt/reoxide/data/current.yaml;\
+    chmod +x /opt/pcode-weaver/scripts/run-case.sh \
+        /opt/pcode-weaver/scripts/install-pcodeweaver-action.sh
+
 FROM scratch
 
-COPY --from=build /root/.local/share/reoxide/plugins/*.so .
+COPY --from=plugin-build /root/.local/share/reoxide/plugins/*.so .
