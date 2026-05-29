@@ -12,11 +12,26 @@ ActionPcodeGraph::ActionPcodeGraph(const PcodeGraph &base)
     : PcodeGraph(base), patternVarnodeDefEmpty() {
   for (const auto &[_id, gv] : liveVarnodes()) {
     const VarGraphNode *node = get_if_uniq<VarGraphNode>(gv);
-    if (node == nullptr || node->isGhost || !node->edges.def.has_value()) {
+    if (node == nullptr || !node->edges.def.has_value()) {
       continue;
     }
     patternVarnodeDefEmpty.emplace(
         node->id, node->edges.def.value() == nullptr
+    );
+  }
+
+  for (const auto &[id, gp] : livePnodes()) {
+    const OpGraphNode &node = *unpackGP(*gp);
+    if (node.isGhost || node.opTp.has_value()) {
+      continue;
+    }
+
+    patternPnodeConnectionsWithoutType.emplace(
+        id,
+        PatternPnodeConnections{
+            .inrefs = node.edges.inrefs,
+            .output = node.edges.output,
+        }
     );
   }
 }
@@ -97,13 +112,6 @@ ActionPcodeGraph::validateExistingPnodeActionTarget(GraphPnode *gp) {
   const OpGraphNode &og = *unpackGP(*gp);
   if (newPnodes.contains(og.id)) {
     return gp;
-  }
-
-  if (!og.opTp.has_value()) {
-    return err(
-        "Action cannot operate on pnode " + og.id.getName() +
-        " because its operation type is undefined"
-    );
   }
 
   return gp;
@@ -386,6 +394,45 @@ Errorable<void> ActionPcodeGraph::validateExistingVarnodeDefStability(
   );
 }
 
+Errorable<void> ActionPcodeGraph::validateExistingPnodeWithoutTypeStability(
+    const OpGraphNode &node
+) {
+  auto original = patternPnodeConnectionsWithoutType.find(node.id);
+  if (original == patternPnodeConnectionsWithoutType.end()) {
+    return {};
+  }
+
+  if (node.edges.output != original->second.output ||
+      node.edges.inrefs != original->second.inrefs) {
+    return err(
+        "Action cannot change connections for pnode " + node.id.getName() +
+        " because its operation type is undefined"
+    );
+  }
+
+  return {};
+}
+
+Errorable<void> ActionPcodeGraph::validateExistingPnodesWithoutTypeStability() {
+  for (const auto &[id, _connections] : patternPnodeConnectionsWithoutType) {
+    auto it = pnodes.find(id);
+    if (it == pnodes.end() || isDeleted(*it->second)) {
+      return err(
+          "Action cannot delete pnode " + id.getName() +
+          " because its operation type is undefined"
+      );
+    }
+
+    auto res =
+        validateExistingPnodeWithoutTypeStability(*unpackGP(*it->second));
+    if (!res.has_value()) {
+      return res;
+    }
+  }
+
+  return {};
+}
+
 Errorable<void> ActionPcodeGraph::validateNewPnode(const NewOpGraphNode &node) {
   if (!node.opTp.has_value()) {
     return err(
@@ -418,6 +465,11 @@ Errorable<void> ActionPcodeGraph::validate() {
     if (!res.has_value()) {
       return res;
     }
+  }
+
+  res = validateExistingPnodesWithoutTypeStability();
+  if (!res.has_value()) {
+    return res;
   }
 
   for (const auto &[_id, newVarnode] : newVarnodes) {

@@ -44,6 +44,9 @@ protected:
   Errorable<void> addEmptyAction(const ast::EmptyAction &ea);
   Errorable<void> addAction(const ast::RuleAction &act);
   Errorable<void> validateExistingVarnodeDefStability(const VarGraphNode &node);
+  Errorable<void>
+  validateExistingPnodeWithoutTypeStability(const OpGraphNode &node);
+  Errorable<void> validateExistingPnodesWithoutTypeStability();
   Errorable<void> validateNewVarnode(const NewVarGraphNode &node);
   Errorable<void> validateNewPnode(const NewOpGraphNode &node);
 
@@ -64,7 +67,14 @@ public:
   std::vector<ast::Id> getNewPnodeIds() const;
 
 protected:
+  struct PatternPnodeConnections {
+    std::unordered_map<size_t, GraphVarnode *> inrefs;
+    GraphVarnode *output;
+  };
+
   std::unordered_map<ast::Id, bool> patternVarnodeDefEmpty;
+  std::unordered_map<ast::Id, PatternPnodeConnections>
+      patternPnodeConnectionsWithoutType;
 
   std::unordered_map<ast::Id, NewVarGraphNode *> newVarnodes;
 
