@@ -1,0 +1,8 @@
+fixture: fixtures/rulecompile/new_varnode_autospec_inv.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 0
+compile_status: 1
+compile_error: Can't get size value for new varnode v_new
+

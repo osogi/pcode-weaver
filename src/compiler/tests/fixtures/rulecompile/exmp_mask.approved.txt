@@ -1,0 +1,9 @@
+fixture: fixtures/rulecompile/exmp_mask.rule
+parse_status: 0
+stderr:
+<empty>
+validate_status: 0
+compile_status: 0
+pattern_steps_count: 7
+action_steps_count: 5
+
