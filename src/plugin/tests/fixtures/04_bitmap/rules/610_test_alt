@@ -1,0 +1,16 @@
+#33   ->(0) o_pretest(USERDEFINED, _) -> v_pre_test_res;
+v_map ->(1) o_pretest; 
+v_bit ->(2) o_pretest;
+
+v_pre_test_res ->(0) o_cond(INT_EQUAL, _) -> v_cond_res;
+#0             ->(1) o_cond
+
+
+--
+#36   ->>(0) o_test(USERDEFINED AFTER o_pretest) ->> v_test_res ->>(0) o_inv(BOOL_NEGATE AFTER o_pretest) ->> v_cond_res;
+v_map ->>(1) o_test; 
+v_bit ->>(2) o_test;
+
+
+DELETE o_cond
+

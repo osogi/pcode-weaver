@@ -1,0 +1,22 @@
+
+                                           v_map ->(0) o_addr;
+#0x78 ->(0) o_word(USERDEFINED, _) -> v_word_res ->(1) o_addr -> vtmp ->(1) o_load(LOAD, _)-> v_mask_map;
+v_bit ->(1) o_word;
+
+
+#121 ->(0) o_shift(USERDEFINED, _) -> v_shift_res;
+v_bit1  ->(1) o_shift;
+
+v_mask_map  ->(0) o_right(INT_RIGHT, _) -> v_right_res;
+v_shift_res ->(1) o_right;
+
+v_right_res ->(0) o_and(INT_AND, _) -> v_and_res ->(0) o_some;
+#1 ->(1) o_and
+
+
+--
+DELETE o_and;
+
+#33 ->>(0) o_pretest(USERDEFINED BEFORE o_word) ->> v_and_res;
+v_map ->>(1) o_pretest; 
+v_bit ->>(2) o_pretest

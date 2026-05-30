@@ -1,0 +1,89 @@
+
+uint main(int param_1,long param_2)
+
+{
+  byte bVar1;
+  ulong uVar2;
+  ulong uVar3;
+  long lVar4;
+  ulong uVar5;
+  ulong uVar6;
+  ulong *puVar7;
+  long in_FS_OFFSET;
+  int local_184;
+  ulong local_180;
+  ulong local_158 [19];
+  undefined8 local_c0;
+  ulong local_b8 [21];
+  long local_10;
+  
+  local_10 = *(long *)(in_FS_OFFSET + 0x28);
+  puVar7 = local_158;
+  for (lVar4 = 0x14; lVar4 != 0; lVar4 = lVar4 + -1) {
+    *puVar7 = 0;
+    puVar7 = puVar7 + 1;
+  }
+  puVar7 = local_b8;
+  for (lVar4 = 0x14; lVar4 != 0; lVar4 = lVar4 + -1) {
+    *puVar7 = 0;
+    puVar7 = puVar7 + 1;
+  }
+  if (param_1 < 2) {
+    uVar2 = 0x29;
+  }
+  else {
+    uVar2 = strtoull(*(char **)(param_2 + 8),(char **)0x0,0);
+  }
+  if (param_1 < 3) {
+    uVar3 = 6;
+  }
+  else {
+    uVar3 = strtoull(*(char **)(param_2 + 0x10),(char **)0x0,0);
+  }
+  for (local_184 = 0; local_184 < 0x18; local_184 = local_184 + 1) {
+    uVar5 = ((long)local_184 * 0x13 + uVar2) % 0x500;
+    uVar6 = (uVar3 + uVar5 + 0xb) % 0x500;
+    vmsave(local_158,uVar5);
+    if ((((uint)uVar5 ^ (uint)uVar3) & 3) == 0) {
+      vmsave(local_b8,uVar6);
+    }
+  }
+  local_180 = uVar2 % 0x500;
+  unique0x10000534 = vmread(local_158,local_180);
+  bVar1 = (byte)local_180;
+  if (!unique0x10000534) {
+    vmsave(local_158,local_180);
+    local_180 = uVar3;
+  }
+  else {
+    vmclear(local_158,local_180);
+  }
+  uVar2 = (uVar2 * 7 + uVar3) % 0x500;
+  unique0x10000535 = vmread(local_b8,uVar2);
+  bVar1 = (byte)uVar2;
+  if (!unique0x10000535) {
+    if (vmread(local_158,uVar2)) {
+      vmsave(local_b8,uVar2);
+      local_180 = local_180 ^ uVar2 * 2;
+    }
+  }
+  else {
+    vmclear(local_b8,uVar2);
+    local_180 = local_180 + uVar2 * 3;
+  }
+  if ((uVar3 & 3) == 0) {
+    vmsave(local_158,local_180 % 0x500);
+  }
+  else if (vmread(local_158,uVar3 % 0x500)) {
+    local_180 = local_180 + 100;
+  }
+  printf("score=%llu users0=%llx locked3=%llx users19=%llx\n",local_180,local_158[0],local_b8[3],
+         local_c0);
+  if (local_10 != *(long *)(in_FS_OFFSET + 0x28)) {
+                    /* WARNING: Subroutine does not return */
+    __stack_chk_fail();
+  }
+  return (uint)local_180 & 7;
+}
+
+

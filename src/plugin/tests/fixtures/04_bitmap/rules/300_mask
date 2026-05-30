@@ -1,0 +1,8 @@
+#1 -> (0) o_lft(INT_LEFT, _) -> v_res;
+#121 ->(0) o_shift(USERDEFINED, _) -> v_shift_res -> (1)o_lft;
+v_bit  ->(1) o_shift
+
+--
+#117 ->>(0) o_mask(USERDEFINED BEFORE o_lft) ->> v_res;
+v_bit ->>(1) o_mask; 
+DELETE o_lft
