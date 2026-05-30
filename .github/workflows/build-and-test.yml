@@ -1,0 +1,85 @@
+name: build and test
+
+on: [pull_request]
+
+jobs:
+  test-compiler:
+    name: Test Compiler
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bison flex libfl-dev g++-13 python3-venv
+          g++-13 --version
+          python3 -m venv venv
+          . venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install 'meson>=1.10.1' 'ninja>=1.11' 'reoxide==0.7.2'
+
+      - name: Test compiler
+        working-directory: src/compiler
+        run: |
+          . ../../venv/bin/activate
+          export XDG_CONFIG_HOME="${RUNNER_TEMP}/config"
+          mkdir -p "${XDG_CONFIG_HOME}/reoxide"
+          touch "${XDG_CONFIG_HOME}/reoxide/reoxide.toml"
+          CXX=g++-13 meson setup build --buildtype release -Dtests=true
+          meson compile -j 1 -C build
+          meson test -C build --print-errorlogs
+
+  build-plugin:
+    name: Build Plugin
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build plugin
+        run: docker build -o tmp/out .
+
+  test-plugin:
+    name: Test Plugin
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bison flex libfl-dev g++-13 python3-venv
+          python3 -m venv venv
+          . venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install 'meson>=1.10.1' 'ninja>=1.11' 'reoxide==0.7.2'
+
+      - name: Build compiler for rule fixtures
+        working-directory: src/compiler
+        run: |
+          . ../../venv/bin/activate
+          export XDG_CONFIG_HOME="${RUNNER_TEMP}/config"
+          mkdir -p "${XDG_CONFIG_HOME}/reoxide"
+          touch "${XDG_CONFIG_HOME}/reoxide/reoxide.toml"
+          CXX=g++-13 meson setup build --buildtype release -Dtests=false
+          meson compile -j 1 -C build
+
+      - name: Build plugin test base image
+        run: |
+          docker build \
+            -f src/plugin/tests/docker/base.Dockerfile \
+            -t pcode-weaver-plugin-test-base:ghidra-12.0_reoxide-0.7.2 \
+            .
+
+      - name: Build plugin test image
+        run: docker build --target plugin-test -t pcode-weaver-plugin-test .
+
+      - name: Test plugin
+        working-directory: src/plugin/tests
+        run: |
+          . ../../../venv/bin/activate
+          meson setup build --buildtype release
+          meson test -C build --print-errorlogs

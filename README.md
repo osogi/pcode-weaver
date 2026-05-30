@@ -1,5 +1,8 @@
 # Pcode Weaver
 
+[![build and test](https://github.com/osogi/pcode-weaver/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/osogi/pcode-weaver/actions/workflows/build-and-test.yml)
+[![formatting-check](https://github.com/osogi/pcode-weaver/actions/workflows/formatting-check.yml/badge.svg)](https://github.com/osogi/pcode-weaver/actions/workflows/formatting-check.yml)
+
 Experimental ReOxide(Ghidra) plugin for applying custom p-code rewrite rules
 with validation checks.
 
