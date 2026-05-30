@@ -1,0 +1,5 @@
+o_mul(INT_MULT, _) -> v_mul_res ->(1) o_add (INT_ADD, _);
+                      v1        ->(0) o_add
+--
+v1        ->> (1) o_add;
+v_mul_res ->> (0) o_add

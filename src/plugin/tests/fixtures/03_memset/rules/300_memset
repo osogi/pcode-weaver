@@ -1,0 +1,35 @@
+v_flag_0(1, _) ->(0) o_extend_flag(INT_ZEXT, bb_body) -> v_always_0;
+
+v_always_0 ->(0) o_mult_zero(INT_MULT, _);
+#-2        ->(1) o_mult_zero -> vtmp_alw0 ->(0) o_tmp_add(INT_ADD, _);
+                                 #1  ->(1) o_tmp_add -> vtmp1 ->(1) o_ptr_add(_,_);
+
+v_elem_size ->(2) o_ptr_add;
+v_cur1      ->(0) o_ptr_add -> v_curtmp ->(0) o_copytmp(COPY, _) -> v_cur2;
+
+v_orig_prt ->(0) o_cpy1(COPY, _) -> v_cur_tmp ->(0) o_get_cur -> v_cur1;
+                                       v_cur2 ->(1) o_get_cur;
+
+v_cur1     ->(1) o_store(STORE, _);
+v_init_val ->(2) o_store;
+
+#0 -> (1) o_cond(INT_NOTEQUAL, _) -> vtmp2 -> (1) o_loop(CBRANCH, bb_precond);
+v_elem_cnt ->(0) o_cpy(COPY, _) -> v_cnt_orig ->(0) o_cnt -> v_cnt ->(0) o_cond;
+
+bb_body ->(0) bb_precond;
+bb_precond ->(1) bb_body
+
+--
+O_usercall(USERDEFINED BEFORE o_cpy);
+
+#76 ->>(0) O_usercall;
+v_orig_prt ->>(1) O_usercall;
+v_init_val ->> (2) O_usercall;
+v_elem_cnt ->>(3) O_usercall;
+v_elem_size ->>(4) O_usercall;
+
+DELETE o_store;
+
+#0 ->> (0) o_cpy;
+#1 ->> (1) o_ptr_add
+
